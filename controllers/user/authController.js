@@ -25,7 +25,12 @@ export const register = async (req, res) => {
       expiresIn: JWT_EXPIRES,
     });
 
-    res.status(201).json({ token, userId: user._id, email: user.email ,profile:user.profile});
+    res.status(201).json({
+      token,
+      userId: user._id,
+      email: user.email,
+      profile: user.profile,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
@@ -52,6 +57,58 @@ export const login = async (req, res) => {
     res
       .status(200)
       .json({ token, userId: user._id, email: user.email, Login: "success" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
+// Update user profile
+export const updateProfile = async (req, res) => {
+  try {
+    const { userId } = req.params; // user id from route param
+    const {
+      fullName,
+      dob,
+      phone,
+      address,
+      chosenStream,
+      registrationImageUrl,
+      liveImageUrl,
+      registrationImageVerified,
+      liveImageVerified,
+      fingerVerified,
+    } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    // Merge/update profile fields
+    user.profile = {
+      ...(user.profile ? user.profile.toObject() : {}), // avoid undefined
+      fullName: fullName ?? user.profile?.fullName,
+      dob: dob ?? user.profile?.dob,
+      phone: phone ?? user.profile?.phone,
+      address: address ?? user.profile?.address,
+      chosenStream: chosenStream ?? user.profile?.chosenStream,
+      registrationImageUrl:
+        registrationImageUrl ?? user.profile?.registrationImageUrl,
+      liveImageUrl: liveImageUrl ?? user.profile?.liveImageUrl,
+      registrationImageVerified:
+        registrationImageVerified ?? user.profile?.registrationImageVerified,
+      liveImageVerified: liveImageVerified ?? user.profile?.liveImageVerified,
+      fingerVerified: fingerVerified ?? user.profile?.fingerVerified,
+      profileCompletedAt: new Date(),
+    };
+
+    // Mark profile as completed
+    user.profileCompleted = true;
+
+    await user.save();
+
+    res
+      .status(200)
+      .json({ msg: "Profile updated successfully", profile: user.profile });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
