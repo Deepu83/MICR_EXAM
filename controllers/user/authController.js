@@ -1,6 +1,7 @@
 import User from "../../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { generateRegisterNo } from "../../utils/generateRegisterNo.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 const JWT_EXPIRES = "1d"; // token expiry
@@ -19,7 +20,15 @@ export const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const user = await User.create({ email, passwordHash });
+    // 🔥 Generate sequential register number
+    const registerNo = await generateRegisterNo();
+    console.log(registerNo,"asdlifhaukisdhfguiasdhgfuioasheduoig");
+
+    const user = await User.create({
+      email,
+      passwordHash,
+      registerNo, // save MICR-style unique ID
+    });
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, {
       expiresIn: JWT_EXPIRES,
@@ -29,6 +38,7 @@ export const register = async (req, res) => {
       token,
       userId: user._id,
       email: user.email,
+      registerNo: user.registerNo,
       profile: user.profile,
     });
   } catch (err) {

@@ -12,15 +12,26 @@ const ProfileSchema = new mongoose.Schema({
   registrationImageVerified: { type: Boolean, default: false },
   liveImageVerified: { type: Boolean, default: false },
   fingerVerified: { type: String }, // e.g., "Right Thumb"
-  profileCompletedAt: { type: Date }
+  profileCompletedAt: { type: Date },
 });
 
 const UserSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true, lowercase: true, index: true },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    index: true,
+  },
   passwordHash: { type: String, required: true },
   profile: ProfileSchema,
+  registerNo: {
+    type: String,
+    unique: true,
+    uppercase: true,
+  },
   profileCompleted: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
 
 export default mongoose.model("User", UserSchema);
