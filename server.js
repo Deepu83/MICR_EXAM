@@ -5,6 +5,9 @@ import userAuthRoutes from "./routes/user/authRoutes.js";
 import adminAuthRoutes from "./routes/admin/authRoutes.js";
 //exam
 import examRoutes from "./routes/examRoutes.js"; 
+import examApplicationRoutes from "./routes/examApplicationRoutes.js";
+
+
 dotenv.config();
 
 const app = express();
@@ -14,6 +17,7 @@ app.use(express.json());
 app.use("/api/users/auth", userAuthRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/exams", examRoutes);
+app.use("/api/exam-applications", examApplicationRoutes);
 // Sample test route
 app.get("/", (req, res) => res.send("🚀 Express + MongoDB running successfully!"));
 
