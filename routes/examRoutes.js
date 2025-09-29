@@ -7,6 +7,7 @@ import {
   deleteExam,
 } from "../controllers/examController.js";   // <-- added .js
 
+
 const router = express.Router();
 
 // Create exam

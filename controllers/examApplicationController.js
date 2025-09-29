@@ -6,8 +6,7 @@ import Exam from "../models/Exam.js";
 // Apply for an exam
 export const applyExam = async (req, res) => {
   try {
-    const { userId, examId } = req.body;
-    
+    const { userId, examId } = req.body;    
 
     // Check if user & exam exist
     const user = await User.findById(userId);

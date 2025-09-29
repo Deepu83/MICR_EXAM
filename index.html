@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Update Profile</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label { display: block; margin-top: 10px; }
+    input, select { padding: 5px; width: 300px; }
+    button { margin-top: 20px; padding: 10px 20px; }
+  </style>
+</head>
+<body>
+  <h1>Update Profile</h1>
+
+  <form id="updateProfileForm" enctype="multipart/form-data">
+    <!-- Personal Details -->
+    <h3>Personal Details</h3>
+    <label>Full Name: <input type="text" name="personal_details[full_name]"></label>
+    <label>Father Name: <input type="text" name="personal_details[father_name]"></label>
+    <label>Date of Birth: <input type="date" name="personal_details[date_of_birth]"></label>
+    <label>Gender: 
+      <select name="personal_details[gender]">
+        <option value="">Select</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+    </label>
+    <label>Contact Number: <input type="text" name="personal_details[contact_number]"></label>
+    <label>Email: <input type="email" name="personal_details[email]"></label>
+
+    <h3>Address</h3>
+    <label>House: <input type="text" name="personal_details[address][house]"></label>
+    <label>Street: <input type="text" name="personal_details[address][street]"></label>
+    <label>City: <input type="text" name="personal_details[address][city]"></label>
+    <label>State: <input type="text" name="personal_details[address][state]"></label>
+    <label>Country: <input type="text" name="personal_details[address][country]"></label>
+    <label>Zip Code: <input type="text" name="personal_details[address][zip_code]"></label>
+
+    <h3>Documents</h3>
+    <label>Passport Photo: <input type="file" name="passport_size_photograph"></label>
+    <label>Signature: <input type="file" name="signature"></label>
+    <label>Identity Proof: <input type="file" name="identity_proof"></label>
+    <label>Education Certificate: <input type="file" name="education_certificate"></label>
+    <label>Address Proof: <input type="file" name="address_proof"></label>
+
+    <button type="submit">Update Profile</button>
+  </form>
+
+  <pre id="result"></pre>
+
+  <script>
+    const form = document.getElementById("updateProfileForm");
+    const result = document.getElementById("result");
+    const userId = "YOUR_USER_ID_HERE"; // Replace with actual user ID
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/users/auth/update-profile/68d629a70be2f4c4b8ad41e5`, {
+          method: "PUT",
+          body: formData
+        });
+
+        const data = await response.json();
+        result.textContent = JSON.stringify(data, null, 2);
+
+      } catch (err) {
+        console.error(err);
+        result.textContent = "Error updating profile.";
+      }
+    });
+  </script>
+</body>
+</html>
