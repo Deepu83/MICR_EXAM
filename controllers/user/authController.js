@@ -2,10 +2,9 @@ import User from "../../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { generateRegisterNo } from "../../utils/generateRegisterNo.js";
-
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
+import cloudinary from "../../config/cloudinary.js";
+const JWT_SECRET = process.env.JWT_SECRET || "860bafe47a1d1e7e81a54e72a7aa9d35721517fc2d259f61df9c0a8441a1e5f75343d33c70042ba2d6154f5cbb239f741fd7e2916dfbde87901ae9522cbbb78a";
 const JWT_EXPIRES = "1d"; // token expiry
-
 // Register new user
 export const register = async (req, res) => {
   try {
@@ -74,40 +73,87 @@ export const login = async (req, res) => {
 };
 
 // Update user profile
+// ========== UPDATE PROFILE ==========
 export const updateProfile = async (req, res) => {
   try {
     const { userId } = req.params; // user id from route param
-    const {
-      fullName,
-      dob,
-      phone,
-      address,
-      chosenStream,
-      registrationImageUrl,
-      liveImageUrl,
-      registrationImageVerified,
-      liveImageVerified,
-      fingerVerified,
-    } = req.body;
-
+    const { personal_details, education_details, documents } = req.body;
+console.log(req.body)
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    // Merge/update profile fields
+    // Upload files to Cloudinary if provided (documents)
+    const uploadedDocuments = { ...documents };
+
+    if (req.files) {
+      if (req.files.passport_size_photograph) {
+        const upload = await cloudinary.uploader.upload(
+          req.files.passport_size_photograph[0].path,
+          { folder: "users/passport" }
+        );
+        uploadedDocuments.passport_size_photograph = {
+          ...(documents?.passport_size_photograph || {}),
+          file: upload.secure_url,
+        };
+      }
+
+      if (req.files.signature) {
+        const upload = await cloudinary.uploader.upload(
+          req.files.signature[0].path,
+          { folder: "users/signature" }
+        );
+        uploadedDocuments.signature = {
+          ...(documents?.signature || {}),
+          file: upload.secure_url,
+        };
+      }
+
+      if (req.files.identity_proof) {
+        const upload = await cloudinary.uploader.upload(
+          req.files.identity_proof[0].path,
+          { folder: "users/identity" }
+        );
+        uploadedDocuments.identity_proof = {
+          ...(documents?.identity_proof || {}),
+          file: upload.secure_url,
+        };
+      }
+
+      if (req.files.education_certificate) {
+        const upload = await cloudinary.uploader.upload(
+          req.files.education_certificate[0].path,
+          { folder: "users/education" }
+        );
+        uploadedDocuments.education_certificate = {
+          ...(documents?.education_certificate || {}),
+          file: upload.secure_url,
+        };
+      }
+
+      if (req.files.address_proof) {
+        const upload = await cloudinary.uploader.upload(
+          req.files.address_proof[0].path,
+          { folder: "users/address" }
+        );
+        uploadedDocuments.address_proof = {
+          ...(documents?.address_proof || {}),
+          file: upload.secure_url,
+        };
+      }
+    }
+
+    // Merge/update nested profile fields
     user.profile = {
-      ...(user.profile ? user.profile.toObject() : {}), // avoid undefined
-      fullName: fullName ?? user.profile?.fullName,
-      dob: dob ?? user.profile?.dob,
-      phone: phone ?? user.profile?.phone,
-      address: address ?? user.profile?.address,
-      chosenStream: chosenStream ?? user.profile?.chosenStream,
-      registrationImageUrl:
-        registrationImageUrl ?? user.profile?.registrationImageUrl,
-      liveImageUrl: liveImageUrl ?? user.profile?.liveImageUrl,
-      registrationImageVerified:
-        registrationImageVerified ?? user.profile?.registrationImageVerified,
-      liveImageVerified: liveImageVerified ?? user.profile?.liveImageVerified,
-      fingerVerified: fingerVerified ?? user.profile?.fingerVerified,
+      ...(user.profile ? user.profile.toObject() : {}),
+      personal_details: {
+        ...(user.profile?.personal_details || {}),
+        ...personal_details,
+      },
+      education_details: {
+        ...(user.profile?.education_details || {}),
+        ...education_details,
+      },
+      documents: uploadedDocuments,
       profileCompletedAt: new Date(),
     };
 
@@ -116,11 +162,15 @@ export const updateProfile = async (req, res) => {
 
     await user.save();
 
-    res
-      .status(200)
-      .json({ msg: "Profile updated successfully", profile: user.profile });
+    res.status(200).json({
+      msg: "Profile updated successfully",
+      profile: user.profile,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 };
+
+
+
