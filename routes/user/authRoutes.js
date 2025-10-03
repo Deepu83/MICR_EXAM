@@ -1,27 +1,67 @@
 
+// import express from "express";
+// import multer from "multer";
+// import { register, login, updateProfile } from "../../controllers/user/authController.js";
+
+// const router = express.Router();
+
+// // ---------------- Multer Setup ----------------
+// const storage = multer.diskStorage({}); // temporary storage before uploading to Cloudinary
+// const upload = multer({ storage });
+
+// // ---------------- Routes ----------------
+// router.post("/register", register);
+// router.post("/login", login);
+
+// // Update profile route with file upload handling
+// router.put(
+//   "/update-profile/:userId",
+//   upload.fields([
+//     { name: "photo", maxCount: 1 },
+//     { name: "signature", maxCount: 1 },
+//     { name: "id_proof", maxCount: 1 },
+//     { name: "education", maxCount: 1 },
+//     { name: "address", maxCount: 1 },
+//   ]),
+//   updateProfile
+// );
+
+// export default router;
 import express from "express";
 import multer from "multer";
+import fs from "fs";
+import path from "path";
 import { register, login, updateProfile } from "../../controllers/user/authController.js";
 
 const router = express.Router();
 
 // ---------------- Multer Setup ----------------
-const storage = multer.diskStorage({}); // temporary storage before uploading to Cloudinary
+const tmpDir = path.join(process.cwd(), "tmp");
+if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, tmpDir),
+  filename: (req, file, cb) => {
+    const safeName = file.originalname.replace(/\s+/g, "_"); // remove spaces
+    cb(null, `${Date.now()}-${safeName}`);
+  },
+});
+
 const upload = multer({ storage });
 
 // ---------------- Routes ----------------
 router.post("/register", register);
 router.post("/login", login);
 
-// Update profile route with file upload handling
+// Update profile with files
 router.put(
   "/update-profile/:userId",
   upload.fields([
-    { name: "passport_size_photograph", maxCount: 1 },
+    { name: "photo", maxCount: 1 },
     { name: "signature", maxCount: 1 },
-    { name: "identity_proof", maxCount: 1 },
-    { name: "education_certificate", maxCount: 1 },
-    { name: "address_proof", maxCount: 1 },
+    { name: "id_proof", maxCount: 1 },
+    { name: "education", maxCount: 1 },
+    { name: "address", maxCount: 1 },
   ]),
   updateProfile
 );
