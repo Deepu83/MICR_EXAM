@@ -1,6 +1,9 @@
 import User from "../../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import fs from "fs";
+import path from "path";
+
 import { generateRegisterNo } from "../../utils/generateRegisterNo.js";
 import cloudinary from "../../config/cloudinary.js";
 const JWT_SECRET = process.env.JWT_SECRET || "860bafe47a1d1e7e81a54e72a7aa9d35721517fc2d259f61df9c0a8441a1e5f75343d33c70042ba2d6154f5cbb239f741fd7e2916dfbde87901ae9522cbbb78a";
@@ -72,94 +75,80 @@ export const login = async (req, res) => {
   }
 };
 
-// Update user profile
-// ========== UPDATE PROFILE ==========
+
+
+
+
 export const updateProfile = async (req, res) => {
   try {
-    const { userId } = req.params; // user id from route param
-    const { personal_details, education_details, documents } = req.body;
-console.log(req.body)
+    const { userId } = req.params;
+
+    // Parse JSON fields
+    const application = req.body.application
+      ? typeof req.body.application === "string"
+        ? JSON.parse(req.body.application)
+        : req.body.application
+      : {};
+    const education = req.body.education
+      ? typeof req.body.education === "string"
+        ? JSON.parse(req.body.education)
+        : req.body.education
+      : {};
+
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    // Upload files to Cloudinary if provided (documents)
-    const uploadedDocuments = { ...documents };
+    // Initialize documents
+    const uploadedDocuments = { ...(user.profile?.documents || {}) };
 
-    if (req.files) {
-      if (req.files.passport_size_photograph) {
-        const upload = await cloudinary.uploader.upload(
-          req.files.passport_size_photograph[0].path,
-          { folder: "users/passport" }
-        );
-        uploadedDocuments.passport_size_photograph = {
-          ...(documents?.passport_size_photograph || {}),
-          file: upload.secure_url,
-        };
-      }
+    if (req.files && Object.keys(req.files).length > 0) {
+      const folderMap = {
+        photo: "users/photo",
+        signature: "users/signature",
+        id_proof: "users/identity",
+        education: "users/education",
+        address: "users/address",
+      };
 
-      if (req.files.signature) {
-        const upload = await cloudinary.uploader.upload(
-          req.files.signature[0].path,
-          { folder: "users/signature" }
-        );
-        uploadedDocuments.signature = {
-          ...(documents?.signature || {}),
-          file: upload.secure_url,
-        };
-      }
+      console.log("Files received:", req.files);
 
-      if (req.files.identity_proof) {
-        const upload = await cloudinary.uploader.upload(
-          req.files.identity_proof[0].path,
-          { folder: "users/identity" }
-        );
-        uploadedDocuments.identity_proof = {
-          ...(documents?.identity_proof || {}),
-          file: upload.secure_url,
-        };
-      }
+      for (const key in req.files) {
+        if (req.files[key].length > 0) {
+          const file = req.files[key][0];
+          const filePath = path.resolve(file.path);
 
-      if (req.files.education_certificate) {
-        const upload = await cloudinary.uploader.upload(
-          req.files.education_certificate[0].path,
-          { folder: "users/education" }
-        );
-        uploadedDocuments.education_certificate = {
-          ...(documents?.education_certificate || {}),
-          file: upload.secure_url,
-        };
-      }
+          // Upload to Cloudinary
+          const upload = await cloudinary.uploader.upload(filePath, {
+            folder: folderMap[key] || "users",
+          });
 
-      if (req.files.address_proof) {
-        const upload = await cloudinary.uploader.upload(
-          req.files.address_proof[0].path,
-          { folder: "users/address" }
-        );
-        uploadedDocuments.address_proof = {
-          ...(documents?.address_proof || {}),
-          file: upload.secure_url,
-        };
+          console.log("Cloudinary upload result:", upload); // 🔥 check URL
+
+          uploadedDocuments[key] = {
+            url: upload.secure_url,      // actual Cloudinary URL
+            public_id: upload.public_id,
+            name: file.originalname,
+            type: file.mimetype,
+            size: file.size,
+            lastModified: new Date(),
+          };
+
+          // Delete local tmp file
+          fs.unlinkSync(filePath);
+        }
       }
     }
 
-    // Merge/update nested profile fields
+    // Save profile
     user.profile = {
       ...(user.profile ? user.profile.toObject() : {}),
-      personal_details: {
-        ...(user.profile?.personal_details || {}),
-        ...personal_details,
-      },
-      education_details: {
-        ...(user.profile?.education_details || {}),
-        ...education_details,
-      },
+      application: { ...(user.profile?.application || {}), ...application },
+      education: { ...(user.profile?.education || {}), ...education },
       documents: uploadedDocuments,
       profileCompletedAt: new Date(),
     };
 
-    // Mark profile as completed
     user.profileCompleted = true;
-
     await user.save();
 
     res.status(200).json({
@@ -167,10 +156,7 @@ console.log(req.body)
       profile: user.profile,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Server error" });
+    console.error("Profile update error:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
-
-
-

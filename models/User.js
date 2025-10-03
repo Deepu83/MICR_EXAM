@@ -1,73 +1,86 @@
-// models/User.js
+
+
 import mongoose from "mongoose";
 
-
-
+// For uploaded files (photo, signature, certificates, etc.)
 const FileSchema = new mongoose.Schema({
-  file: { type: String },
-  max_size: { type: String },
-  allowed_formats: [{ type: String }],
+  name: { type: String },
+  type: { type: String },
+  size: { type: Number },
+    url: String,
+  lastModified: { type: Date },
 });
 
+// Education details structure
 const EducationDetailSchema = new mongoose.Schema({
   year: { type: String },
   month: { type: String },
   college: { type: String },
   university: { type: String },
   place: { type: String },
-  registration_number: { type: String },
-  certificate_upload: { type: String },
-  
+  regNo: { type: String },
+  certificate: { type: FileSchema },
 });
 
+// Personal details structure
 const PersonalDetailsSchema = new mongoose.Schema({
-  full_name: { type: String },
-  father_name: { type: String },
-  date_of_birth: { type: Date },
+  fullName: { type: String },
+  fatherName: { type: String },
+  dob: { type: Date },
   gender: { type: String },
-  marital_status: { type: String },
+  maritalStatus: { type: String },
   nationality: { type: String },
-  contact_number: { type: String },
-  alternate_number: { type: String },
+  presentStatus: { type: String },
+  councilName: { type: String },
+  iriaMembershipNumber: { type: String },
+  registrationNumber: { type: String },
   email: { type: String },
+  contactNumber: { type: String },
+  altNumber: { type: String },
+  centers: {
+    center1: { type: String },
+    center2: { type: String },
+  },
   address: {
     house: { type: String },
     street: { type: String },
     city: { type: String },
     district: { type: String },
     state: { type: String },
-    country: { type: String },
-    zip_code: { type: String },
+    pincode: { type: String },
   },
-  council_name: { type: String },
-  registration_number: { type: String },
-  registration_certificate: { type: String },
-  iria_membership_number: { type: String },
-  present_status: { type: String },
-  select_center_1: { type: String },
-  select_center_2: { type: String },
+  registrationCertificate: { type: FileSchema },
 });
 
-const EducationDetailsSchema = new mongoose.Schema({
+// Education section schema
+const EducationSchema = new mongoose.Schema({
   mbbs: { type: EducationDetailSchema },
   pg: { type: EducationDetailSchema },
-  other_qualifications: [EducationDetailSchema],
+  others: [EducationDetailSchema],
 });
 
+// Documents section schema
 const DocumentsSchema = new mongoose.Schema({
-  passport_size_photograph: { type: FileSchema },
+  address: { type: FileSchema },
+  education: { type: FileSchema },
+  id_proof: { type: FileSchema },
+  photo: { type: FileSchema },
   signature: { type: FileSchema },
-  identity_proof: { type: FileSchema },
-  education_certificate: { type: FileSchema },
-  address_proof: { type: FileSchema },
 });
 
-const ProfileSchema = new mongoose.Schema({
-  personal_details: { type: PersonalDetailsSchema },
-  education_details: { type: EducationDetailsSchema },
-  documents: { type: DocumentsSchema },
-  profileCompletedAt: { type: Date },
-});
+// Main User/Profile schema
+const ProfileSchema = new mongoose.Schema(
+  {
+    application: { type: PersonalDetailsSchema },
+    documents: { type: DocumentsSchema },
+    education: { type: EducationSchema },
+    profileCompletedAt: { type: Date },
+  },
+  { timestamps: true }
+);
+
+// export default mongoose.model("User", ProfileSchema);
+
 
 const UserSchema = new mongoose.Schema({
   email: {
