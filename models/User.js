@@ -83,6 +83,22 @@ const ProfileSchema = new mongoose.Schema(
 
 
 const UserSchema = new mongoose.Schema({
+    name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  aadhaarNumber: {
+    type: String,
+    required: true,
+    unique: true,
+    match: /^[0-9]{12}$/, // Ensures exactly 12 digits
+  },
+  mobileNumber: {
+    type: String,
+    required: true,
+    match: /^[6-9]\d{9}$/, // Basic Indian mobile number validation
+  },
   email: {
     type: String,
     required: true,
@@ -90,6 +106,7 @@ const UserSchema = new mongoose.Schema({
     lowercase: true,
     index: true,
   },
+
   passwordHash: { type: String, required: true },
   profile: ProfileSchema,
   registerNo: {
