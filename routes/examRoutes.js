@@ -14,6 +14,7 @@ const router = express.Router();
 router.post("/", createExam);
 
 // Get all exams
+
 router.get("/", getExams);
 
 // Get exam by ID

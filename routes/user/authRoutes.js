@@ -1,37 +1,9 @@
 
-// import express from "express";
-// import multer from "multer";
-// import { register, login, updateProfile } from "../../controllers/user/authController.js";
-
-// const router = express.Router();
-
-// // ---------------- Multer Setup ----------------
-// const storage = multer.diskStorage({}); // temporary storage before uploading to Cloudinary
-// const upload = multer({ storage });
-
-// // ---------------- Routes ----------------
-// router.post("/register", register);
-// router.post("/login", login);
-
-// // Update profile route with file upload handling
-// router.put(
-//   "/update-profile/:userId",
-//   upload.fields([
-//     { name: "photo", maxCount: 1 },
-//     { name: "signature", maxCount: 1 },
-//     { name: "id_proof", maxCount: 1 },
-//     { name: "education", maxCount: 1 },
-//     { name: "address", maxCount: 1 },
-//   ]),
-//   updateProfile
-// );
-
-// export default router;
 import express from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { register, login, updateProfile } from "../../controllers/user/authController.js";
+import { register, login, updateProfile,getAllUsers, getUserById  } from "../../controllers/user/authController.js";
 
 const router = express.Router();
 
@@ -65,5 +37,9 @@ router.put(
   ]),
   updateProfile
 );
+// ---------------- GET all users ----------------
+router.get("/users", getAllUsers);
+router.get("/users/:userId", getUserById);
 
+// export default router;
 export default router;
