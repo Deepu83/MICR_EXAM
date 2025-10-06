@@ -19,8 +19,7 @@ const EducationDetailSchema = new mongoose.Schema({
   university: { type: String },
   place: { type: String },
   regNo: { type: String },
-  // certificate: { type: FileSchema },
-    certificates: [FileSchema],
+  certificate: { type: FileSchema },
 });
 
 // Personal details structure
@@ -58,7 +57,6 @@ const EducationSchema = new mongoose.Schema({
   mbbs: { type: EducationDetailSchema },
   pg: { type: EducationDetailSchema },
   others: [EducationDetailSchema],
-  
 });
 
 // Documents section schema
