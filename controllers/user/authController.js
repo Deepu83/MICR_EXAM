@@ -233,6 +233,107 @@ export const updateProfile = async (req, res) => {
       }
     }
 
+    //for mbbs certifi
+    
+    
+  // 🟡 2️⃣ Handle MBBS certificate files
+ // 🟡 MBBS
+// MBBS certificates
+// ---------------- MBBS Certificates ----------------
+// Ensure education object exists
+user.profile.education = user.profile.education || {};
+
+// Ensure MBBS object exists
+user.profile.education.mbbs = user.profile.education.mbbs || { certificates: [] };
+
+// Process MBBS files
+const uploadedMBBS = [];
+
+if (req.files?.mbbsCertificates?.length) {
+  const file = req.files.mbbsCertificates[0];
+  const filePath = path.resolve(file.path);
+
+  if (!fs.existsSync(filePath)) {
+    console.warn("MBBS file not found before upload:", filePath);
+  } else {
+    try {
+      const upload = await cloudinary.uploader.upload(filePath, {
+        folder: "education/mbbs",
+      });
+
+      uploadedMBBS.push({
+        url: upload.secure_url,
+        public_id: upload.public_id,
+        name: file.originalname,
+        type: file.mimetype,
+        size: file.size,
+        lastModified: new Date(),
+      });
+
+      fs.unlinkSync(filePath);
+    } catch (err) {
+      console.error("Failed to upload MBBS file:", file.originalname, err.message);
+    }
+  }
+
+  // Save to user profile
+  user.profile.education.mbbs.certificates.push(...uploadedMBBS);
+}
+
+
+
+// ---------------- PG Certificates ----------------
+const uploadedPG = [];
+if (req.files?.pgCertificates) {
+  for (const file of req.files.pgCertificates) {
+    try {
+      const filePath = path.resolve(file.path);
+
+      if (!fs.existsSync(filePath)) {
+        console.warn("PG file not found before upload:", filePath);
+        continue;
+      }
+
+      const upload = await cloudinary.uploader.upload(filePath, {
+        folder: "education/pg",
+      });
+
+      uploadedPG.push({
+        url: upload.secure_url,
+        public_id: upload.public_id,
+        name: file.originalname,
+        type: file.mimetype,
+        size: file.size,
+        lastModified: new Date(),
+      });
+
+      fs.unlinkSync(filePath);
+
+      console.log("PG file uploaded:", file.originalname);
+    } catch (err) {
+      console.error("Failed to upload PG file:", file.originalname, err.message);
+    }
+  }
+
+  // Save to user profile
+  user.profile.education.pg = user.profile.education.pg || {};
+  user.profile.education.pg.certificates = [
+    ...(user.profile.education.pg.certificates || []),
+    ...uploadedPG,
+  ];
+}
+
+// ---------------- Save user ----------------
+await user.save();
+
+console.log("MBBS Certificates uploaded:", uploadedMBBS.length);
+console.log("PG Certificates uploaded:", uploadedPG.length);
+console.log("User education data:", JSON.stringify(user.profile.education, null, 2));
+
+
+
+    //
+
     // Save profile
     user.profile = {
       ...(user.profile ? user.profile.toObject() : {}),

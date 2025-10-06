@@ -34,6 +34,9 @@ router.put(
     { name: "id_proof", maxCount: 1 },
     { name: "education", maxCount: 1 },
     { name: "address", maxCount: 1 },
+     { name: "mbbsCertificates", maxCount: 1 }, // Add MBBS certificate files
+    { name: "pgCertificates", maxCount: 1 },
+    
   ]),
   updateProfile
 );
