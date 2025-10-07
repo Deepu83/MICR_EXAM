@@ -231,6 +231,8 @@ export const login = async (req, res) => {
       mobileNumber: user.mobileNumber,
         registerNo: user.registerNo,
       aadhaarNumber: user.aadhaarNumber,
+
+registerNo:user.registerNo,
       Login: "success",
     });
   } catch (err) {
@@ -238,32 +240,6 @@ export const login = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
-
-// Login existing user
-// export const login = async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-//     if (!email || !password)
-//       return res.status(400).json({ msg: "Email and password required" });
-
-//     const user = await User.findOne({ email });
-//     if (!user) return res.status(400).json({ msg: "Invalid credentials" });
-
-//     const isMatch = await bcrypt.compare(password, user.passwordHash);
-//     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
-
-//     const token = jwt.sign({ id: user._id }, JWT_SECRET, {
-//       expiresIn: JWT_EXPIRES,
-//     });
-
-//     res
-//       .status(200)
-//       .json({ token, userId: user._id, email: user.email, Login: "success" });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ msg: "Server error" });
-//   }
-// };
 
 
 
