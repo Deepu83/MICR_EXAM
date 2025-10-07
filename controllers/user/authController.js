@@ -229,6 +229,7 @@ export const login = async (req, res) => {
       name: user.name,
       email: user.email,
       mobileNumber: user.mobileNumber,
+        registerNo: user.registerNo,
       aadhaarNumber: user.aadhaarNumber,
       Login: "success",
     });
