@@ -7,6 +7,9 @@ import adminAuthRoutes from "./routes/admin/authRoutes.js";
 import cors from "cors"; // <-- import cors
 import examRoutes from "./routes/examRoutes.js"; 
 import examApplicationRoutes from "./routes/examApplicationRoutes.js";
+import examRegistrationRoutes from "./routes/ExamRegistrationRoutes.js";
+
+
 
 
 dotenv.config();
@@ -19,6 +22,8 @@ app.use("/api/users/auth", userAuthRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/exams", examRoutes);
 app.use("/api/exam-applications", examApplicationRoutes);
+app.use("/api/registrations", examRegistrationRoutes);
+
 // Sample test route
 app.get("/", (req, res) => res.send("🚀 Express + MongoDB running successfully!"));
 

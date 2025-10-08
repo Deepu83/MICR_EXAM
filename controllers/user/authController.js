@@ -135,6 +135,7 @@ await sendWhatsApp("918057509308", waMessage);
       email: user.email,
       registerNo: user.registerNo,
       profile: user.profile,
+     
     });
   } catch (err) {
     console.error("❌ Registration error:", err);
@@ -169,6 +170,7 @@ export const login = async (req, res) => {
 
 registerNo:user.registerNo,
       progression: user.progression || {},
+       profileCompleted:user.profileCompleted,
       Login: "success",
     });
   } catch (err) {
@@ -313,10 +315,6 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
-
-
-
-
 //logic of passed 
 
 export const markStepPassed = async (userId, step) => {
@@ -361,4 +359,81 @@ export const markStepPassed = async (userId, step) => {
 
   await user.save();
   return user.progression;
+};
+
+
+//ds
+export const adminMarkStepPassed = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { step } = req.body; // step can be: "step1", "step2", "step3A", "step3B"
+
+    if (!step) {
+      return res.status(400).json({ msg: "Step is required" });
+    }
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    const now = new Date();
+console.log(req.body)
+    // Initialize progression if not present
+    if (!user.progression) user.progression = {};
+
+    switch (step) {
+      case "step1":
+        user.progression.step1 = user.progression.step1 || {};
+        user.progression.step1.status = "passed";
+        user.progression.step1.completedDate = now;
+        user.progression.currentLevel = 2;
+        user.progression.step2 = user.progression.step2 || { status: "not_started" };
+        break;
+
+      case "step2":
+        user.progression.step2 = user.progression.step2 || {};
+        user.progression.step2.status = "passed";
+        user.progression.step2.completedDate = now;
+        user.progression.currentLevel = 3;
+        user.progression.step3A = user.progression.step3A || { status: "not_started" };
+        user.progression.step3B = user.progression.step3B || { status: "not_started" };
+        break;
+
+      case "step3A":
+        user.progression.step3A = user.progression.step3A || {};
+        user.progression.step3A.status = "passed";
+        user.progression.step3A.completedDate = now;
+        break;
+
+      case "step3B":
+        user.progression.step3B = user.progression.step3B || {};
+        user.progression.step3B.status = "passed";
+        user.progression.step3B.completedDate = now;
+        break;
+
+      default:
+        return res.status(400).json({ msg: "Invalid step" });
+    }
+
+    // Check if all steps passed
+    if (
+      user.progression.step1?.status === "passed" &&
+      user.progression.step2?.status === "passed" &&
+      user.progression.step3A?.status === "passed" &&
+      user.progression.step3B?.status === "passed"
+    ) {
+      user.progression.allStepsCompleted = true;
+      user.progression.completionDate = now;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      msg: `Step ${step} marked as passed successfully`,
+      progression: user.progression,
+    });
+  } catch (err) {
+    console.error("Admin mark step passed error:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
 };

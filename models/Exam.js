@@ -37,11 +37,7 @@ const examSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    examStep: {
-      type: String,
-      enum: ["1", "2A","2B","3A","3B"], // restrict options
-      required: true,
-    },
+
   },
   { timestamps: true }
 );
