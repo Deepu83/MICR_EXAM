@@ -3,7 +3,7 @@ import express from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { register, login, updateProfile,getAllUsers, getUserById  } from "../../controllers/user/authController.js";
+import { register, login, updateProfile,getAllUsers, getUserById ,adminMarkStepPassed } from "../../controllers/user/authController.js";
 
 const router = express.Router();
 
@@ -40,6 +40,8 @@ router.put(
 // ---------------- GET all users ----------------
 router.get("/users", getAllUsers);
 router.get("/users/:userId", getUserById);
+
+router.put("/:userId/progression", adminMarkStepPassed);
 
 // export default router;
 export default router;
