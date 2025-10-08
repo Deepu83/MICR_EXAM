@@ -7,71 +7,6 @@
 // import { generateRegisterNo } from "../../utils/generateRegisterNo.js";
 // import cloudinary from "../../config/cloudinary.js";
 
-// const JWT_SECRET =
-//   process.env.JWT_SECRET ||
-//   "860bafe47a1d1e7e81a54e72a7aa9d35721517fc2d259f61df9c0a8441a1e5f75343d33c70042ba2d6154f5cbb239f741fd7e2916dfbde87901ae9522cbbb78a";
-// const JWT_EXPIRES = "1d"; // token expiry
-
-// // ✅ Register new user
-// export const register = async (req, res) => {
-//   try {
-//     const { name, aadhaarNumber, mobileNumber, email, password } = req.body;
-
-//     // 🔸 Validate required fields
-//     if (!name || !aadhaarNumber || !mobileNumber || !email || !password) {
-//       return res.status(400).json({ msg: "All fields are required" });
-//     }
-
-//     // 🔸 Check if email already exists
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser) {
-//       return res.status(400).json({ msg: "Email already registered" });
-//     }
-
-//     // 🔸 Check if Aadhaar already exists
-//     const existingAadhaar = await User.findOne({ aadhaarNumber });
-//     if (existingAadhaar) {
-//       return res.status(400).json({ msg: "Aadhaar number already registered" });
-//     }
-
-//     // 🔸 Hash password
-//     const salt = await bcrypt.genSalt(10);
-//     const passwordHash = await bcrypt.hash(password, salt);
-
-//     // 🔸 Generate sequential register number
-//     const registerNo = await generateRegisterNo();
-
-//     // 🔸 Create new user
-//     const user = await User.create({
-//       name,
-//       aadhaarNumber,
-//       mobileNumber,
-//       email,
-//       passwordHash,
-//       registerNo,
-//     });
-
-//     // 🔸 Generate JWT token
-//     const token = jwt.sign({ id: user._id }, JWT_SECRET, {
-//       expiresIn: JWT_EXPIRES,
-//     });
-
-//     res.status(201).json({
-//       msg: "User registered successfully",
-//       token,
-//       userId: user._id,
-//       name: user.name,
-//       aadhaarNumber: user.aadhaarNumber,
-//       mobileNumber: user.mobileNumber,
-//       email: user.email,
-//       registerNo: user.registerNo,
-//       profile: user.profile,
-//     });
-//   } catch (err) {
-//     console.error("Registration error:", err);
-//     res.status(500).json({ msg: "Server error" });
-//   }
-// };
 import dotenv from "dotenv";
 dotenv.config(); // Make sure env variables are loaded at the very top
 // import { sendSMS } from "../../utils/sendWhatsApp.js"; // import our utility
@@ -233,6 +168,7 @@ export const login = async (req, res) => {
       aadhaarNumber: user.aadhaarNumber,
 
 registerNo:user.registerNo,
+      progression: user.progression || {},
       Login: "success",
     });
   } catch (err) {
@@ -315,6 +251,25 @@ export const updateProfile = async (req, res) => {
     };
 
     user.profileCompleted = true;
+    user.progression = {
+  ...(user.progression ? user.progression.toObject() : {}),
+  currentLevel: 1, // STEP-1 now available after profile update
+  step1: {
+    ...(user.progression?.step1 || {}),
+    papers: { ...(user.progression?.step1?.papers || {}) },
+    overallStatus: user.progression?.step1?.overallStatus || "not_started",
+    completedDate: user.progression?.step1?.completedDate || null,
+    allPapersPassed: user.progression?.step1?.allPapersPassed || false,
+  },
+  step2: {
+    ...(user.progression?.step2 || {}),
+  },
+  step3: {
+    ...(user.progression?.step3 || {}),
+  },
+};
+
+
     await user.save();
 
     res.status(200).json({
@@ -357,4 +312,53 @@ export const getUserById = async (req, res) => {
     console.error("Error fetching user:", err);
     res.status(500).json({ msg: "Server error", error: err.message });
   }
+};
+
+
+
+
+//logic of passed 
+
+export const markStepPassed = async (userId, step) => {
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  const now = new Date();
+
+  switch (step) {
+    case "step1":
+      user.progression.step1.status = "passed";
+      user.progression.step1.completedDate = now;
+      user.progression.currentLevel = 2;
+      user.progression.step2.status = "not_started";
+      break;
+    case "step2":
+      user.progression.step2.status = "passed";
+      user.progression.step2.completedDate = now;
+      user.progression.currentLevel = 3;
+      user.progression.step3A.status = "not_started";
+      user.progression.step3B.status = "not_started";
+      break;
+    case "step3A":
+      user.progression.step3A.status = "passed";
+      user.progression.step3A.completedDate = now;
+      break;
+    case "step3B":
+      user.progression.step3B.status = "passed";
+      user.progression.step3B.completedDate = now;
+      break;
+  }
+
+  if (
+    user.progression.step1.status === "passed" &&
+    user.progression.step2.status === "passed" &&
+    user.progression.step3A.status === "passed" &&
+    user.progression.step3B.status === "passed"
+  ) {
+    user.progression.allStepsCompleted = true;
+    user.progression.completionDate = now;
+  }
+
+  await user.save();
+  return user.progression;
 };

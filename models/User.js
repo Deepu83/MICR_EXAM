@@ -80,7 +80,123 @@ const ProfileSchema = new mongoose.Schema(
 );
 
 // export default mongoose.model("User", ProfileSchema);
+// const ProgressionSchema = new mongoose.Schema({
+//   currentLevel: {
+//     type: Number,
+//     enum: [0, 1, 2, 3], // 0 = not started, 1 = STEP-1, 2 = STEP-2, 3 = STEP-3
+//     default: 0,
+//   },
+//   step1: {
+//     status: { type: String, enum: ["not_started", "in_progress", "passed", "failed", "locked"], default: "locked" },
+//     completedDate: { type: Date, default: null },
+//     applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+//   },
+//   step2: {
+//     status: { type: String, enum: ["not_started", "in_progress", "passed", "failed", "locked"], default: "locked" },
+//     completedDate: { type: Date, default: null },
+//     applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+//   },
+//   step3A: {
+//     status: { type: String, enum: ["not_started", "in_progress", "passed", "failed", "locked"], default: "locked" },
+//     completedDate: { type: Date, default: null },
+//     applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+//   },
+//   step3B: {
+//     status: { type: String, enum: ["not_started", "in_progress", "passed", "failed", "locked"], default: "locked" },
+//     completedDate: { type: Date, default: null },
+//     applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+//   },
+//   allStepsCompleted: { type: Boolean, default: false },
+//   completionDate: { type: Date, default: null },
+// });
 
+
+
+// ✅ Reusable Paper Schema
+const PaperSchema = new mongoose.Schema({
+  status: {
+    type: String,
+    enum: ["not_started", "in_progress", "passed", "failed"],
+    default: "not_started",
+  },
+  completedDate: { type: Date, default: null },
+  applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+});
+
+// ✅ STEP-1 Schema (multiple papers)
+const Step1Schema = new mongoose.Schema({
+  papers: {
+    paper1: {
+      status: {
+        type: String,
+        enum: ["not_started", "in_progress", "passed", "failed"],
+        default: "not_started",
+      },
+      completedDate: { type: Date, default: null },
+      applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+    },
+    paper2: {
+      status: {
+        type: String,
+        enum: ["not_started", "in_progress", "passed", "failed"],
+        default: "not_started",
+      },
+      completedDate: { type: Date, default: null },
+      applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+    },
+  },
+  overallStatus: {
+    type: String,
+    enum: ["not_started", "in_progress", "passed", "failed"],
+    default: "not_started",
+  },
+  completedDate: { type: Date, default: null },
+  allPapersPassed: { type: Boolean, default: false },
+});
+
+
+// ✅ STEP-2 Schema
+const Step2Schema = new mongoose.Schema({
+  status: {
+    type: String,
+    enum: ["not_started", "in_progress", "passed", "failed"],
+    default: "not_started",
+  },
+  completedDate: { type: Date, default: null },
+  applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+});
+
+// ✅ STEP-3 Schema (Part A & Part B)
+const Step3PartSchema = new mongoose.Schema({
+  status: {
+    type: String,
+    enum: ["locked", "not_started", "passed", "failed"],
+    default: "locked",
+  },
+  completedDate: { type: Date, default: null },
+  applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+});
+
+const Step3Schema = new mongoose.Schema({
+  partA: { type: Step3PartSchema, default: () => ({}) },
+  partB: { type: Step3PartSchema, default: () => ({}) },
+});
+
+// ✅ Main Progression Schema
+const ProgressionSchema = new mongoose.Schema({
+  currentLevel: {
+    type: Number,
+    enum: [0,1, 2, 3, 4], // 1: STEP-1 | 2: STEP-2 | 3: STEP-3A | 4: STEP-3B
+    default: 0,
+  },
+  step1: { type: Step1Schema, default: () => ({}) },
+  step2: { type: Step2Schema, default: () => ({}) },
+  step3: { type: Step3Schema, default: () => ({}) },
+  allStepsCompleted: { type: Boolean, default: false },
+  completionDate: { type: Date, default: null },
+});
+
+// ✅ User Schema
 
 const UserSchema = new mongoose.Schema({
     name: {
@@ -115,7 +231,14 @@ const UserSchema = new mongoose.Schema({
     uppercase: true,
   },
   profileCompleted: { type: Boolean, default: false },
+  progression: { type: ProgressionSchema, default: () => ({}) }, 
   createdAt: { type: Date, default: Date.now },
 });
+
+
+
+//new schema 
+
+
 
 export default mongoose.model("User", UserSchema);
