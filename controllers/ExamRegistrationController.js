@@ -56,7 +56,7 @@ export const createRegistration = async (req, res) => {
           paymentMode: paymentMode || "Razorpay",
           transactionId: transactionId || "",
           country: country || "India",                                       
-          exchangeRate: exchangeRate || 1, 
+          // exchangeRate: exchangeRate || 1, 
           remarks: remarks || "",
           paymentDate: paymentAmount ? new Date() : null,
         },
