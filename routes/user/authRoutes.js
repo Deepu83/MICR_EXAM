@@ -41,7 +41,7 @@ router.put(
 router.get("/users", getAllUsers);
 router.get("/users/:userId", getUserById);
 
-router.put("/users/:userId/progression", adminMarkStepPassed);
+router.put("/users/progression", adminMarkStepPassed);
 
 // export default router;
 export default router;

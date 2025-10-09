@@ -1,98 +1,5 @@
 
 
-// import ExamRegistration from "../models/ExamRegistration.js";
-// import User from "../models/User.js";
-// import mongoose from "mongoose";
-
-// export const createRegistration = async (req, res) => {
-//   try {
-//     const { userId, examId, examDate, examCenter, paymentAmount, examStep } = req.body;
-
-//     // ✅ Validate required fields
-//     if (!userId || !examId || !examDate || !examCenter || !paymentAmount || !examStep) {
-//       return res.status(400).json({ msg: "All required fields must be provided" });
-//     }
-
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ msg: "User not found" });
-
-//     // ✅ Check if user already registered for this exam
-//     let registration = await ExamRegistration.findOne({ userId, examId });
-
-//     if (!registration) {
-//       // ✅ Generate EXAM2025-394 pattern with unique random digits
-//       const currentYear = new Date().getFullYear();
-//       let applicationNumber;
-//       let isUnique = false;
-
-//       // Retry until we find a unique application number
-//       while (!isUnique) {
-//         const randomDigits = Math.floor(100 + Math.random() * 900); // 3 random digits
-//         applicationNumber = `EXAM${currentYear}-${randomDigits}`;
-
-//         const existing = await ExamRegistration.findOne({ applicationNumber });
-//         if (!existing) isUnique = true;
-//       }
-
-//       // ✅ Create new registration
-//       registration = new ExamRegistration({
-//         applicationNumber,
-//         userId: new mongoose.Types.ObjectId(userId),
-//         examId: new mongoose.Types.ObjectId(examId),
-//         applicationInfo: { examDate, examCenter, paymentAmount },
-//       });
-
-//       await registration.save();
-//     }
-
-//     // ✅ Update user progression (store applicationNumber in applicationId field)
-//     user.progression = user.progression || {};
-
-//     switch (examStep) {
-//       case "1":
-//         user.progression.step1 = user.progression.step1 || {};
-//         user.progression.step1.papers = user.progression.step1.papers || {};
-//         user.progression.step1.papers.paper1 = user.progression.step1.papers.paper1 || {};
-//         user.progression.step1.papers.paper2 = user.progression.step1.papers.paper2 || {};
-
-//         user.progression.step1.papers.paper1.applicationId = registration.applicationNumber;
-//         user.progression.step1.papers.paper2.applicationId = registration.applicationNumber;
-//         break;
-
-//       case "2":
-//         user.progression.step2 = user.progression.step2 || {};
-//         user.progression.step2.applicationId = registration.applicationNumber;
-//         break;
-
-//       case "3A":
-//         user.progression.step3 = user.progression.step3 || {};
-//         user.progression.step3.partA = user.progression.step3.partA || {};
-//         user.progression.step3.partA.applicationId = registration.applicationNumber;
-//         break;
-
-//       case "3B":
-//         user.progression.step3 = user.progression.step3 || {};
-//         user.progression.step3.partB = user.progression.step3.partB || {};
-//         user.progression.step3.partB.applicationId = registration.applicationNumber;
-//         break;
-
-//       default:
-//         return res.status(400).json({ msg: "Invalid examStep" });
-//     }
-
-//     await user.save();
-
-//     res.status(200).json({
-//       msg: "Exam registration linked to user progression successfully",
-//       registration,
-//     });
-
-//   } catch (err) {
-//     console.error("❌ Server Error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
-
 import ExamRegistration from "../models/ExamRegistration.js";
 import User from "../models/User.js";
 import mongoose from "mongoose";
@@ -103,14 +10,12 @@ export const createRegistration = async (req, res) => {
       userId,
       examId,
       examDate,
-      // examCenter,
       paymentAmount,
       examCode,        // changed from examStep
       currency,
       paymentMode,
       transactionId,
       country,
-      // exchangeRate,
       remarks
     } = req.body;
 
@@ -146,13 +51,12 @@ export const createRegistration = async (req, res) => {
         examId: new mongoose.Types.ObjectId(examId),
         applicationInfo: {
           examDate,
-          examCenter,
           paymentAmount,
           currency: currency || "INR",
           paymentMode: paymentMode || "Razorpay",
           transactionId: transactionId || "",
-          country: country || "India",
-          exchangeRate: exchangeRate || 1,
+          country: country || "India",                                       
+          exchangeRate: exchangeRate || 1, 
           remarks: remarks || "",
           paymentDate: paymentAmount ? new Date() : null,
         },
@@ -209,7 +113,6 @@ export const createRegistration = async (req, res) => {
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
-
 
 
 // ✅ Get all registrations
@@ -283,6 +186,78 @@ export const updateResult = async (req, res) => {
     res.status(200).json({ msg: "Result updated", registration: populated });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+
+
+
+// ✅ Get step details by applicationId
+export const getStepDetailsByApplicationId = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+
+    if (!applicationId) {
+      return res.status(400).json({ msg: "Application ID is required" });
+    }
+
+    // ✅ Find the user whose progression contains this applicationId
+    const user = await User.findOne({
+      $or: [
+        { "progression.step1.papers.paper1.applicationId": applicationId },
+        { "progression.step1.papers.paper2.applicationId": applicationId },
+        { "progression.step2.applicationId": applicationId },
+        { "progression.step3.partA.applicationId": applicationId },
+        { "progression.step3.partB.applicationId": applicationId },
+      ],
+    });
+
+    if (!user) {
+      return res.status(404).json({ msg: "No user found for this application ID" });
+    }
+
+    let stepDetails = {};
+    let stepName = "";
+
+    // ✅ Identify which step the applicationId belongs to
+    const p = user.progression;
+
+    if (p.step1?.papers?.paper1?.applicationId === applicationId) {
+      stepName = "Step 1 - Paper 1";
+      stepDetails = p.step1.papers.paper1;
+    } else if (p.step1?.papers?.paper2?.applicationId === applicationId) {
+      stepName = "Step 1 - Paper 2";
+      stepDetails = p.step1.papers.paper2;
+    } else if (p.step2?.applicationId === applicationId) {
+      stepName = "Step 2";
+      stepDetails = p.step2;
+    } else if (p.step3?.partA?.applicationId === applicationId) {
+      stepName = "Step 3A";
+      stepDetails = p.step3.partA;
+    } else if (p.step3?.partB?.applicationId === applicationId) {
+      stepName = "Step 3B";
+      stepDetails = p.step3.partB;
+    }
+
+    // ✅ Find registration info from ExamRegistration model
+    const registration = await ExamRegistration.findOne({ applicationNumber: applicationId })
+      .populate("examId", "examName examCode")
+      .populate("userId", "name email");
+
+    res.status(200).json({
+      msg: "Step details fetched successfully",
+      stepName,
+      user: { name: user.name, email: user.email },
+      applicationId,
+      stepDetails: {
+        status: stepDetails.status || "not_started",
+        completedDate: stepDetails.completedDate || null,
+      },
+      registration,
+    });
+  } catch (err) {
+    console.error("❌ Server Error:", err);
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
