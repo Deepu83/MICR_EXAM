@@ -79,36 +79,6 @@ const ProfileSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// export default mongoose.model("User", ProfileSchema);
-// const ProgressionSchema = new mongoose.Schema({
-//   currentLevel: {
-//     type: Number,
-//     enum: [0, 1, 2, 3], // 0 = not started, 1 = STEP-1, 2 = STEP-2, 3 = STEP-3
-//     default: 0,
-//   },
-//   step1: {
-//     status: { type: String, enum: ["not_started", "in_progress", "passed", "failed", "locked"], default: "locked" },
-//     completedDate: { type: Date, default: null },
-//     applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
-//   },
-//   step2: {
-//     status: { type: String, enum: ["not_started", "in_progress", "passed", "failed", "locked"], default: "locked" },
-//     completedDate: { type: Date, default: null },
-//     applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
-//   },
-//   step3A: {
-//     status: { type: String, enum: ["not_started", "in_progress", "passed", "failed", "locked"], default: "locked" },
-//     completedDate: { type: Date, default: null },
-//     applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
-//   },
-//   step3B: {
-//     status: { type: String, enum: ["not_started", "in_progress", "passed", "failed", "locked"], default: "locked" },
-//     completedDate: { type: Date, default: null },
-//     applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
-//   },
-//   allStepsCompleted: { type: Boolean, default: false },
-//   completionDate: { type: Date, default: null },
-// });
 
 
 
@@ -133,7 +103,8 @@ const Step1Schema = new mongoose.Schema({
         default: "not_started",
       },
       completedDate: { type: Date, default: null },
-      applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+      // applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+      applicationId: { type: String, default: null },
     },
     paper2: {
       status: {
@@ -142,7 +113,8 @@ const Step1Schema = new mongoose.Schema({
         default: "not_started",
       },
       completedDate: { type: Date, default: null },
-      applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+      // applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+      applicationId: { type: String, default: null },
     },
   },
   overallStatus: {
@@ -163,7 +135,8 @@ const Step2Schema = new mongoose.Schema({
     default: "not_started",
   },
   completedDate: { type: Date, default: null },
-  applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+  // applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+  applicationId: { type: String, default: null },
 });
 
 // ✅ STEP-3 Schema (Part A & Part B)
@@ -174,7 +147,8 @@ const Step3PartSchema = new mongoose.Schema({
     default: "locked",
   },
   completedDate: { type: Date, default: null },
-  applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+  // applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
+  applicationId: { type: String, default: null },
 });
 
 const Step3Schema = new mongoose.Schema({

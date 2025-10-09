@@ -21,7 +21,7 @@ const ExamRegistrationSchema = new mongoose.Schema(
     applicationInfo: {
       applicationDate: { type: Date, default: Date.now },
       examDate: { type: Date, required: true },
-      examCenter: { type: String, required: true },
+      // examCenter: { type: String, required: true },
       applicationStatus: {
         type: String,
         enum: ["pending", "approved", "rejected", "appeared", "cancelled"],
@@ -34,6 +34,12 @@ const ExamRegistrationSchema = new mongoose.Schema(
       },
       paymentDate: { type: Date, default: null },
       paymentAmount: { type: Number, required: true, min: 0 },
+      //s
+  currency: { type: String, default: "INR" },               // ISO currency code
+  paymentMode: { type: String, default: "Razorpay" },       // e.g., Razorpay, Stripe, PayPal
+  transactionId: { type: String, default: "" },
+  country: { type: String, default: "India" },              // for reporting
+  // exchangeRate: { type: Number, default: 1 },     
       remarks: { type: String, default: "" },
     },
 

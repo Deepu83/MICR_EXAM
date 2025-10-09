@@ -167,7 +167,6 @@ export const login = async (req, res) => {
       mobileNumber: user.mobileNumber,
         registerNo: user.registerNo,
       aadhaarNumber: user.aadhaarNumber,
-
 registerNo:user.registerNo,
       progression: user.progression || {},
        profileCompleted:user.profileCompleted,
@@ -360,9 +359,6 @@ export const markStepPassed = async (userId, step) => {
   await user.save();
   return user.progression;
 };
-
-
-//ds
 export const adminMarkStepPassed = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -377,15 +373,36 @@ export const adminMarkStepPassed = async (req, res) => {
     if (!user) return res.status(404).json({ msg: "User not found" });
 
     const now = new Date();
-console.log(req.body)
+    console.log("Request body:", req.body);
+
     // Initialize progression if not present
     if (!user.progression) user.progression = {};
+
+    // Helper: mark all papers as passed
+    const markPapersPassed = (papersObj = {}) => {
+      const updated = {};
+      for (const [key, paper] of Object.entries(papersObj)) {
+        updated[key] = {
+          ...paper,
+          status: "passed",
+          completedDate: now,
+          applicationId: paper.applicationId || null,
+        };
+      }
+      return updated;
+    };
 
     switch (step) {
       case "step1":
         user.progression.step1 = user.progression.step1 || {};
         user.progression.step1.status = "passed";
         user.progression.step1.completedDate = now;
+        user.progression.step1.overallStatus = "passed";
+        user.progression.step1.allPapersPassed = true;
+
+        // ✅ mark papers as passed
+        user.progression.step1.papers = markPapersPassed(user.progression.step1.papers || {});
+
         user.progression.currentLevel = 2;
         user.progression.step2 = user.progression.step2 || { status: "not_started" };
         break;
@@ -394,6 +411,12 @@ console.log(req.body)
         user.progression.step2 = user.progression.step2 || {};
         user.progression.step2.status = "passed";
         user.progression.step2.completedDate = now;
+        user.progression.step2.overallStatus = "passed";
+        user.progression.step2.allPapersPassed = true;
+
+        // ✅ mark papers as passed
+        user.progression.step2.papers = markPapersPassed(user.progression.step2.papers || {});
+
         user.progression.currentLevel = 3;
         user.progression.step3A = user.progression.step3A || { status: "not_started" };
         user.progression.step3B = user.progression.step3B || { status: "not_started" };
@@ -403,19 +426,21 @@ console.log(req.body)
         user.progression.step3A = user.progression.step3A || {};
         user.progression.step3A.status = "passed";
         user.progression.step3A.completedDate = now;
+        user.progression.step3A.overallStatus = "passed";
         break;
 
       case "step3B":
         user.progression.step3B = user.progression.step3B || {};
         user.progression.step3B.status = "passed";
         user.progression.step3B.completedDate = now;
+        user.progression.step3B.overallStatus = "passed";
         break;
 
       default:
         return res.status(400).json({ msg: "Invalid step" });
     }
 
-    // Check if all steps passed
+    // ✅ Check if all steps passed
     if (
       user.progression.step1?.status === "passed" &&
       user.progression.step2?.status === "passed" &&
