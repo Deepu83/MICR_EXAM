@@ -5,12 +5,15 @@ import {
   getRegistrationById,
   updateResult,
   getStepDetailsByApplicationId,
+  verifyPayment
 } from "../controllers/ExamRegistrationController.js";
 
 const router = express.Router();
 
 // Routes
-router.post("/", createRegistration);                 // Create new registration
+router.post("/", createRegistration);  
+router.post("/verify-payment", verifyPayment);
+               // Create new registration
 router.get("/", getAllRegistrations);                // Get all registrations
 router.get("/:registrationId", getRegistrationById); // Get registration by ID
 router.put("/result/:registrationId", updateResult); // Update result

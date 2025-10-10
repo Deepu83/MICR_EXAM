@@ -1,179 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Update Profile</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exam Registration Payment</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; max-width: 600px; }
-    h1, h3 { color: #333; }
-    label { display: block; margin-top: 10px; font-weight: bold; }
-    input, select { padding: 6px; width: 100%; margin-top: 4px; }
-    button { margin-top: 20px; padding: 10px 20px; cursor: pointer; }
-    pre { background: #f5f5f5; padding: 10px; margin-top: 20px; white-space: pre-wrap; word-break: break-word; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 40px;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    input, select, button {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #528FF0;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background-color: #3a6edc;
+    }
+    .success, .error {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .success { color: green; }
+    .error { color: red; }
   </style>
 </head>
 <body>
-  <h1>Update Profile</h1>
+  <div class="container">
+    <h2>Exam Registration Payment</h2>
+    <input type="text" id="userId" placeholder="User ID" required />
+    <input type="text" id="examId" placeholder="Exam ID" required />
+    <input type="date" id="examDate" required />
+    <input type="number" id="amount" placeholder="Payment Amount (INR)" required />
+    <input type="text" id="examCode" placeholder="Exam Code (e.g. 1, 2, 3A, 3B)" required />
+    <button id="payBtn">Pay Now</button>
+    <div id="status"></div>
+  </div>
 
-  <form id="updateProfileForm" enctype="multipart/form-data">
-    <h3>Application Details</h3>
-    <label>Full Name:<input type="text" name="application[fullName]" required></label>
-    <label>Father Name:<input type="text" name="application[fatherName]" required></label>
-    <label>Date of Birth:<input type="date" name="application[dob]" required></label>
-    <label>Gender:
-      <select name="application[gender]" required>
-        <option value="">Select</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-      </select>
-    </label>
-    <label>Marital Status:<input type="text" name="application[maritalStatus]"></label>
-    <label>Nationality:<input type="text" name="application[nationality]"></label>
-    <label>Present Status:<input type="text" name="application[presentStatus]"></label>
-    <label>Council Name:<input type="text" name="application[councilName]"></label>
-    <label>IRIA Membership Number:<input type="text" name="application[iriaMembershipNumber]"></label>
-    <label>Registration Number:<input type="text" name="application[registrationNumber]"></label>
-    <label>Email:<input type="email" name="application[email]"></label>
-    <label>Contact Number:<input type="text" name="application[contactNumber]"></label>
-    <label>Alternate Number:<input type="text" name="application[altNumber]"></label>
+  <script>
+    const apiBase = "http://localhost:5000/api/registrations";
 
-    <h3>Preference Centers</h3>
-    <label>Center 1:<input type="text" name="application[centers][center1]"></label>
-    <label>Center 2:<input type="text" name="application[centers][center2]"></label>
+    document.getElementById("payBtn").addEventListener("click", async () => {
+      const userId = document.getElementById("userId").value.trim();
+      const examId = document.getElementById("examId").value.trim();
+      const examDate = document.getElementById("examDate").value;
+      const paymentAmount = document.getElementById("amount").value;
+      const examCode = document.getElementById("examCode").value.trim();
+      const statusDiv = document.getElementById("status");
 
-    <h3>Address</h3>
-    <label>House:<input type="text" name="application[address][house]"></label>
-    <label>Street:<input type="text" name="application[address][street]"></label>
-    <label>City:<input type="text" name="application[address][city]"></label>
-    <label>District:<input type="text" name="application[address][district]"></label>
-    <label>State:<input type="text" name="application[address][state]"></label>
-    <label>Pincode:<input type="text" name="application[address][pincode]"></label>
+      if (!userId || !examId || !examDate || !paymentAmount || !examCode) {
+        statusDiv.innerHTML = "<p class='error'>⚠️ Please fill all fields</p>";
+        return;
+      }
 
-    <h3>Education</h3>
-    <label>MBBS College:<input type="text" name="education[mbbs][college]"></label>
-    <label>MBBS University:<input type="text" name="education[mbbs][university]"></label>
-    <label>MBBS Place:<input type="text" name="education[mbbs][place]"></label>
-    <label>MBBS Reg No:<input type="text" name="education[mbbs][regNo]"></label>
-    <label>MBBS Month:<input type="text" name="education[mbbs][month]"></label>
-    <label>MBBS Year:<input type="text" name="education[mbbs][year]"></label>
-    <label>PG College:<input type="text" name="education[pg][college]"></label>
-    <label>PG University:<input type="text" name="education[pg][university]"></label>
-    <label>PG Place:<input type="text" name="education[pg][place]"></label>
-    <label>PG Reg No:<input type="text" name="education[pg][regNo]"></label>
-    <label>PG Month:<input type="text" name="education[pg][month]"></label>
-    <label>PG Year:<input type="text" name="education[pg][year]"></label>
+      try {
+        // ✅ 1. Create registration (and Razorpay order)
+        const res = await fetch(apiBase, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            examId,
+            examDate,
+            paymentAmount,
+            examCode,
+          }),
+        });
 
-<h3>Documents</h3>
-<label>Photo:
-  <input type="file" name="photo" accept="image/*">
-</label>
-<label>Signature:
-  <input type="file" name="signature" accept="image/*">
-</label>
-<label>Identity Proof:
-  <input type="file" name="id_proof" accept="image/*,.pdf">
-</label>
-<label>Education Certificate:
-  <input type="file" name="education" accept="image/*,.pdf">
-</label>
-<label>Address Proof:
-  <input type="file" name="address" accept="image/*,.pdf">
-</label>
+        const data = await res.json();
 
+        if (!data.razorpayOrder) {
+          statusDiv.innerHTML = `<p class='error'>Error: ${data.msg || "Could not create order"}</p>`;
+          return;
+        }
 
-    <button type="submit">Update Profile</button>
-  </form>
+        const { orderId, amount, currency, key } = data.razorpayOrder;
 
-  <pre id="result"></pre>
+        // ✅ 2. Open Razorpay payment window
+        const options = {
+          key,
+          amount,
+          currency,
+          name: "MICR Exam Portal",
+          description: "Exam Registration Fee",
+          order_id: orderId,
+          handler: async function (response) {
+            // ✅ 3. Verify payment
+            const verifyRes = await fetch(`${apiBase}/verify-payment`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                order_id: response.razorpay_order_id,
+                payment_id: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              }),
+            });
 
-<script>
-const form = document.getElementById("updateProfileForm");
-const result = document.getElementById("result");
-const userId = "68df80a4482e48404d7c88c2";
+            const verifyData = await verifyRes.json();
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+            if (verifyData.msg === "Payment verified successfully") {
+              statusDiv.innerHTML = "<p class='success'>✅ Payment Successful! Registration Complete.</p>";
+            } else {
+              statusDiv.innerHTML = `<p class='error'>❌ ${verifyData.msg}</p>`;
+            }
+          },
+          theme: {
+            color: "#528FF0",
+          },
+        };
 
-  // Create FormData
-  const formData = new FormData();
+        const rzp = new Razorpay(options);
+        rzp.open();
 
-  // --- Serialize Application Fields ---
-  const applicationData = {
-    fullName: form.elements["application[fullName]"].value,
-    fatherName: form.elements["application[fatherName]"].value,
-    dob: form.elements["application[dob]"].value,
-    gender: form.elements["application[gender]"].value,
-    maritalStatus: form.elements["application[maritalStatus]"].value,
-    nationality: form.elements["application[nationality]"].value,
-    presentStatus: form.elements["application[presentStatus]"].value,
-    councilName: form.elements["application[councilName]"].value,
-    iriaMembershipNumber: form.elements["application[iriaMembershipNumber]"].value,
-    registrationNumber: form.elements["application[registrationNumber]"].value,
-    email: form.elements["application[email]"].value,
-    contactNumber: form.elements["application[contactNumber]"].value,
-    altNumber: form.elements["application[altNumber]"].value,
-    centers: {
-      center1: form.elements["application[centers][center1]"].value,
-      center2: form.elements["application[centers][center2]"].value
-    },
-    address: {
-      house: form.elements["application[address][house]"].value,
-      street: form.elements["application[address][street]"].value,
-      city: form.elements["application[address][city]"].value,
-      district: form.elements["application[address][district]"].value,
-      state: form.elements["application[address][state]"].value,
-      pincode: form.elements["application[address][pincode]"].value
-    }
-  };
-  formData.append("application", JSON.stringify(applicationData));
-
-  // --- Serialize Education Fields ---
-  const educationData = {
-    mbbs: {
-      college: form.elements["education[mbbs][college]"].value,
-      university: form.elements["education[mbbs][university]"].value,
-      place: form.elements["education[mbbs][place]"].value,
-      regNo: form.elements["education[mbbs][regNo]"].value,
-      month: form.elements["education[mbbs][month]"].value,
-      year: form.elements["education[mbbs][year]"].value,
-    },
-    pg: {
-      college: form.elements["education[pg][college]"].value,
-      university: form.elements["education[pg][university]"].value,
-      place: form.elements["education[pg][place]"].value,
-      regNo: form.elements["education[pg][regNo]"].value,
-      month: form.elements["education[pg][month]"].value,
-      year: form.elements["education[pg][year]"].value,
-    }
-  };
-  formData.append("education", JSON.stringify(educationData));
-
-  // --- Append Files ---
-  if (form.elements.photo.files[0]) formData.append("photo", form.elements.photo.files[0]);
-  if (form.elements.signature.files[0]) formData.append("signature", form.elements.signature.files[0]);
-  if (form.elements.id_proof.files[0]) formData.append("id_proof", form.elements.id_proof.files[0]);
-  if (form.elements.education.files[0]) formData.append("education", form.elements.education.files[0]);
-  if (form.elements.address.files[0]) formData.append("address", form.elements.address.files[0]);
-
-  try {
-    const response = await fetch(`http://localhost:5000/api/users/auth/update-profile/${userId}`, {
-      method: "PUT",
-      body: formData
+      } catch (err) {
+        console.error(err);
+        statusDiv.innerHTML = "<p class='error'>❌ Server Error</p>";
+      }
     });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      result.textContent = "✅ Profile submitted successfully:\n" + JSON.stringify(data.profile, null, 2);
-    } else {
-      result.textContent = "❌ Error: " + JSON.stringify(data, null, 2);
-    }
-  } catch (err) {
-    console.error(err);
-    result.textContent = "❌ Network error: " + err.message;
-  }
-});
-</script>
-
+  </script>
 </body>
 </html>
