@@ -2,6 +2,8 @@ import ExamRegistration from "../models/ExamRegistration.js";
 import User from "../models/User.js";
 import mongoose from "mongoose";
 import Razorpay from "razorpay";
+import { createHmac } from "crypto";
+
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -132,42 +134,65 @@ export const createRegistration = async (req, res) => {
 };
 
 
-//varify the payment 
+// //varify the payment 
+// export const verifyPayment = async (req, res) => {
+//   try {
+//     const { order_id, payment_id, signature } = req.body;
+
+//     const sign = order_id + "|" + payment_id;
+//     const expectedSign = crypto
+//       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+//       .update(sign)
+//       .digest("hex");
+
+//     if (expectedSign !== signature) {
+//       return res.status(400).json({ msg: "Invalid payment signature" });
+//     }
+
+//     // ✅ Update registration payment info
+//     await ExamRegistration.findOneAndUpdate(
+//       { "applicationInfo.transactionId": order_id },
+//       {
+//         $set: {
+//           "applicationInfo.paymentStatus": "paid",
+//           "applicationInfo.paymentDate": new Date(),
+//           "applicationInfo.transactionId": payment_id, // replace order ID with payment ID
+//         },
+//       }
+//     );
+
+//     res.status(200).json({ msg: "Payment verified successfully" });
+//   } catch (err) {
+//     console.error("❌ Verification Error:", err);
+//     res.status(500).json({ msg: "Server error", error: err.message });
+//   }
+// };
+
+
+
 export const verifyPayment = async (req, res) => {
   try {
     const { order_id, payment_id, signature } = req.body;
 
-    const sign = order_id + "|" + payment_id;
-    const expectedSign = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(sign)
-      .digest("hex");
-
-    if (expectedSign !== signature) {
-      return res.status(400).json({ msg: "Invalid payment signature" });
+    if (!order_id || !payment_id || !signature) {
+      return res.status(400).json({ msg: "Missing payment details" });
     }
 
-    // ✅ Update registration payment info
-    await ExamRegistration.findOneAndUpdate(
-      { "applicationInfo.transactionId": order_id },
-      {
-        $set: {
-          "applicationInfo.paymentStatus": "paid",
-          "applicationInfo.paymentDate": new Date(),
-          "applicationInfo.transactionId": payment_id, // replace order ID with payment ID
-        },
-      }
-    );
+    const generatedSignature = createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(order_id + "|" + payment_id)
+      .digest("hex");
 
-    res.status(200).json({ msg: "Payment verified successfully" });
+    if (generatedSignature === signature) {
+      // Update registration or mark as paid here if needed
+      return res.status(200).json({ msg: "Payment verified successfully" });
+    } else {
+      return res.status(400).json({ msg: "Invalid payment signature" });
+    }
   } catch (err) {
     console.error("❌ Verification Error:", err);
-    res.status(500).json({ msg: "Server error", error: err.message });
+    return res.status(500).json({ msg: "Server error during verification" });
   }
 };
-
-
-
 
 // ✅ Get all registrations
 export const getAllRegistrations = async (req, res) => {
