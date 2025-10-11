@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Order</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f8; padding: 40px; }
+    .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    input, button { width: 100%; margin: 10px 0; padding: 10px; border-radius: 8px; font-size: 16px; }
+    button { background-color: #528FF0; color: white; border: none; cursor: pointer; transition: 0.2s; }
+    button:hover { background-color: #3a6edc; }
+    .success, .error { text-align: center; font-weight: bold; margin-top: 20px; }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Create Order</h2>
+    <input type="number" id="amount" placeholder="Payment Amount (INR)" value="200">
+    <button id="createBtn">Create Order</button>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const createOrderAPI = "http://localhost:5000/api/registrations/create-order";
+
+    document.getElementById("createBtn").addEventListener("click", async () => {
+      const amount = document.getElementById("amount").value;
+      const statusDiv = document.getElementById("status");
+
+      if (!amount) {
+        statusDiv.innerHTML = "<p class='error'>⚠️ Please enter amount</p>";
+        return;
+      }
+
+      try {
+        statusDiv.innerHTML = "<p>⏳ Creating order...</p>";
+
+        const res = await fetch(createOrderAPI, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentAmount: amount, currency: "INR" })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          statusDiv.innerHTML = `<p class='error'>❌ ${data.msg || "Order creation failed"}</p>`;
+          return;
+        }
+
+        // Redirect to payment page with order data as query params
+        const params = new URLSearchParams({
+          orderId: data.orderId,
+          amount: data.amount,
+          currency: data.currency,
+          key: data.key
+        }).toString();
+
+        window.location.href = `payment.html?${params}`;
+
+      } catch (err) {
+        console.error(err);
+        statusDiv.innerHTML = "<p class='error'>❌ Server error</p>";
+      }
+    });
+  </script>
+</body>
+</html>

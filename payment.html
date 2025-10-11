@@ -1,149 +1,4 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Exam Registration Payment</title>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      padding: 40px;
-    }
-    .container {
-      max-width: 400px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    h2 {
-      text-align: center;
-      color: #333;
-    }
-    input, select, button {
-      width: 100%;
-      margin: 10px 0;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    button {
-      background-color: #528FF0;
-      color: white;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    button:hover {
-      background-color: #3a6edc;
-    }
-    .success, .error {
-      text-align: center;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-    .success { color: green; }
-    .error { color: red; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>Exam Registration Payment</h2>
-    <input type="text" id="userId" placeholder="User ID" required />
-    <input type="text" id="examId" placeholder="Exam ID" required />
-    <input type="date" id="examDate" required />
-    <input type="number" id="amount" placeholder="Payment Amount (INR)" required />
-    <input type="text" id="examCode" placeholder="Exam Code (e.g. 1, 2, 3A, 3B)" required />
-    <button id="payBtn">Pay Now</button>
-    <div id="status"></div>
-  </div>
-
-  <script>
-    const apiBase = "http://localhost:5000/api/registrations";
-
-    document.getElementById("payBtn").addEventListener("click", async () => {
-      const userId = document.getElementById("userId").value.trim();
-      const examId = document.getElementById("examId").value.trim();
-      const examDate = document.getElementById("examDate").value;
-      const paymentAmount = document.getElementById("amount").value;
-      const examCode = document.getElementById("examCode").value.trim();
-      const statusDiv = document.getElementById("status");
-
-      if (!userId || !examId || !examDate || !paymentAmount || !examCode) {
-        statusDiv.innerHTML = "<p class='error'>⚠️ Please fill all fields</p>";
-        return;
-      }
-
-      try {
-        // ✅ 1. Create registration (and Razorpay order)
-        const res = await fetch(apiBase, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId,
-            examId,
-            examDate,
-            paymentAmount,
-            examCode,
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!data.razorpayOrder) {
-          statusDiv.innerHTML = `<p class='error'>Error: ${data.msg || "Could not create order"}</p>`;
-          return;
-        }
-
-        const { orderId, amount, currency, key } = data.razorpayOrder;
-
-        // ✅ 2. Open Razorpay payment window
-        const options = {
-          key,
-          amount,
-          currency,
-          name: "MICR Exam Portal",
-          description: "Exam Registration Fee",
-          order_id: orderId,
-          handler: async function (response) {
-            // ✅ 3. Verify payment
-            const verifyRes = await fetch(`${apiBase}/verify-payment`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                order_id: response.razorpay_order_id,
-                payment_id: response.razorpay_payment_id,
-                signature: response.razorpay_signature,
-              }),
-            });
-
-            const verifyData = await verifyRes.json();
-
-            if (verifyData.msg === "Payment verified successfully") {
-              statusDiv.innerHTML = "<p class='success'>✅ Payment Successful! Registration Complete.</p>";
-            } else {
-              statusDiv.innerHTML = `<p class='error'>❌ ${verifyData.msg}</p>`;
-            }
-          },
-          theme: {
-            color: "#528FF0",
-          },
-        };
-
-        const rzp = new Razorpay(options);
-        rzp.open();
-
-      } catch (err) {
-        console.error(err);
-        statusDiv.innerHTML = "<p class='error'>❌ Server Error</p>";
-      }
-    });
-  </script>
-</body>
-</html> -->
+<!-- 
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -304,6 +159,104 @@
         console.error(err);
         statusDiv.innerHTML = "<p class='error'>❌ Server Error. Please try again.</p>";
       }
+    });
+  </script>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pay Exam Fee</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f8; padding: 40px; }
+    .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    input, button { width: 100%; margin: 10px 0; padding: 10px; border-radius: 8px; font-size: 16px; }
+    button { background-color: #528FF0; color: white; border: none; cursor: pointer; transition: 0.2s; }
+    button:hover { background-color: #3a6edc; }
+    .success { color: green; font-weight: bold; text-align: center; }
+    .error { color: red; font-weight: bold; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Complete Payment</h2>
+    <input type="text" id="userId" placeholder="User ID">
+    <input type="text" id="examId" placeholder="Exam ID">
+    <input type="date" id="examDate">
+    <input type="text" id="examCode" placeholder="Exam Code (1, 2A, 3B)">
+    <button id="payBtn">Pay Now</button>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const verifyPaymentAPI = "http://localhost:5000/api/registrations/verify-payment";
+
+    // Get order details from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get("orderId");
+    const amount = urlParams.get("amount");
+    const currency = urlParams.get("currency");
+    const key = urlParams.get("key");
+
+    document.getElementById("payBtn").addEventListener("click", () => {
+      const userId = document.getElementById("userId").value.trim();
+      const examId = document.getElementById("examId").value.trim();
+      const examDate = document.getElementById("examDate").value;
+      const examCode = document.getElementById("examCode").value.trim();
+      const statusDiv = document.getElementById("status");
+
+      if (!userId || !examId || !examDate || !examCode) {
+        statusDiv.innerHTML = "<p class='error'>⚠️ Fill all fields</p>";
+        return;
+      }
+
+      const options = {
+        key,
+        amount,
+        currency,
+        name: "MICR Exam Portal",
+        description: "Exam Registration Fee",
+        order_id: orderId,
+        handler: async function(response) {
+          statusDiv.innerHTML = "<p>⏳ Verifying payment...</p>";
+
+          // Verify & register
+          const verifyRes = await fetch(verifyPaymentAPI, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId,
+              examId,
+              examDate,
+              paymentAmount: amount / 100,
+              examCode,
+              order_id: response.razorpay_order_id,
+              payment_id: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+              currency,
+              country: "India",
+              remarks: "Exam Registration Payment"
+            }),
+          });
+
+          const verifyData = await verifyRes.json();
+          if (verifyRes.ok) {
+            statusDiv.innerHTML = `<div class='success'>✅ Payment Successful!<br>Application Registered.<br>Transaction ID: ${response.razorpay_payment_id}</div>`;
+          } else {
+            statusDiv.innerHTML = `<p class='error'>❌ ${verifyData.msg || "Verification failed"}</p>`;
+          }
+        },
+        theme: { color: "#528FF0" }
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+      rzp.on("payment.failed", function(response) {
+        statusDiv.innerHTML = `<p class='error'>❌ Payment Failed: ${response.error.description}</p>`;
+      });
     });
   </script>
 </body>

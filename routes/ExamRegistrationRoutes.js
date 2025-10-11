@@ -5,12 +5,18 @@ import {
   getRegistrationById,
   updateResult,
   getStepDetailsByApplicationId,
-  verifyPayment
+  verifyPayment,
+  createOrder,
+  verifyPaymentAndRegister
 } from "../controllers/ExamRegistrationController.js";
 
 const router = express.Router();
 
 // Routes
+router.post("/create-order", createOrder);
+
+router.post("/verify-payment", verifyPaymentAndRegister);
+
 router.post("/", createRegistration);  
 router.post("/verify-payment", verifyPayment);
                // Create new registration
