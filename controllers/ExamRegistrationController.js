@@ -10,6 +10,163 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+
+
+export const createOrder = async (req, res) => {
+  try {
+    const { paymentAmount, currency } = req.body;
+
+    if (!paymentAmount) {
+      return res.status(400).json({ msg: "Amount is required" });
+    }
+
+    const orderOptions = {
+      amount: paymentAmount * 100, // paise
+      currency: currency || "INR",
+      receipt: `receipt_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(orderOptions);
+
+        // ✅ Log order details to console
+    console.log("✅ Razorpay Order Created:");
+    console.log("Order ID:", order.id);
+    console.log("Amount (in paise):", order.amount);
+    console.log("Currency:", order.currency);
+    console.log("Receipt:", order.receipt);
+    console.log("Full Order Object:", order);
+
+
+    res.status(200).json({
+      msg: "Order created",
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      key: process.env.RAZORPAY_KEY_ID, // send to frontend for checkout
+    });
+  } catch (err) {
+    console.error("Order creation error:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+
+
+
+
+export const verifyPaymentAndRegister = async (req, res) => {
+  try {
+    const {
+      userId,
+      examId,
+      examDate,
+      paymentAmount,
+      examCode,
+      order_id,
+      payment_id,
+      signature,
+      currency,
+      country,
+      remarks,
+    } = req.body;
+
+
+    //
+
+    console.log("🟢 Payment Verification Request Received");
+    console.log("Order ID:", order_id);
+    console.log("Payment ID:", payment_id);
+    console.log("Received Signature:", signature);
+
+
+    if (!userId || !examId || !order_id || !payment_id || !signature) {
+      return res.status(400).json({ msg: "Missing required fields" });
+    }
+
+    const generatedSignature = createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(order_id + "|" + payment_id)
+      .digest("hex");
+
+    if (generatedSignature !== signature) {
+      return res.status(400).json({ msg: "Payment verification failed" });
+    }
+
+    // ✅ Payment verified, create registration
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    // Check if already registered
+    let registration = await ExamRegistration.findOne({ userId, examId });
+    if (registration) {
+      return res.status(400).json({ msg: "User already registered for this exam" });
+    }
+
+    // Generate unique application number
+    const currentYear = new Date().getFullYear();
+    let applicationNumber;
+    let isUnique = false;
+
+    while (!isUnique) {
+      const randomDigits = Math.floor(100 + Math.random() * 900);
+      applicationNumber = `EXAM${currentYear}-${randomDigits}`;
+      const existing = await ExamRegistration.findOne({ applicationNumber });
+      if (!existing) isUnique = true;
+    }
+
+    registration = new ExamRegistration({
+      applicationNumber,
+      userId: new mongoose.Types.ObjectId(userId),
+      examId: new mongoose.Types.ObjectId(examId),
+      applicationInfo: {
+        examDate,
+        paymentAmount,
+        currency: currency || "INR",
+        paymentMode: "Razorpay",
+        transactionId: payment_id,
+        country: country || "India",
+        remarks: remarks || "",
+        paymentStatus: "paid",
+      },
+    });
+
+    await registration.save();
+
+    // Update user progression
+    user.progression = user.progression || {};
+    switch (examCode) {
+      case "1":
+        user.progression.step1 = user.progression.step1 || {};
+        user.progression.step1.papers = user.progression.step1.papers || {};
+        user.progression.step1.papers.paper1 = user.progression.step1.papers.paper1 || {};
+        user.progression.step1.papers.paper2 = user.progression.step1.papers.paper2 || {};
+        user.progression.step1.papers.paper1.applicationId = registration.applicationNumber;
+        user.progression.step1.papers.paper2.applicationId = registration.applicationNumber;
+        break;
+      case "2":
+        user.progression.step2 = user.progression.step2 || {};
+        user.progression.step2.applicationId = registration.applicationNumber;
+        break;
+      case "3A":
+        user.progression.step3 = user.progression.step3 || {};
+        user.progression.step3.partA = user.progression.step3.partA || {};
+        user.progression.step3.partA.applicationId = registration.applicationNumber;
+        break;
+      case "3B":
+        user.progression.step3 = user.progression.step3 || {};
+        user.progression.step3.partB = user.progression.step3.partB || {};
+        user.progression.step3.partB.applicationId = registration.applicationNumber;
+        break;
+    }
+
+    await user.save();
+
+    res.status(200).json({ msg: "Payment verified and registration completed", registration });
+  } catch (err) {
+    console.error("Verification & registration error:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
 export const createRegistration = async (req, res) => {
   try {
     const {
@@ -59,6 +216,17 @@ export const createRegistration = async (req, res) => {
 
       const order = await razorpay.orders.create(orderOptions);
 
+// / ✅ Step 1: Create Razorpay Order
+
+
+// ✅ Log order details to console
+console.log("✅ Razorpay Order Created Successfully:");
+console.log("Order ID:", order.id);
+console.log("Amount (in paise):", order.amount);
+console.log("Currency:", order.currency);
+console.log("Status:", order.status);
+console.log("Receipt:", order.receipt);
+console.log("Full Order Object:", order);
       // ✅ Step 2: Save registration with order details
       registration = new ExamRegistration({
         applicationNumber,
@@ -134,41 +302,6 @@ export const createRegistration = async (req, res) => {
 };
 
 
-// //varify the payment 
-// export const verifyPayment = async (req, res) => {
-//   try {
-//     const { order_id, payment_id, signature } = req.body;
-
-//     const sign = order_id + "|" + payment_id;
-//     const expectedSign = crypto
-//       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-//       .update(sign)
-//       .digest("hex");
-
-//     if (expectedSign !== signature) {
-//       return res.status(400).json({ msg: "Invalid payment signature" });
-//     }
-
-//     // ✅ Update registration payment info
-//     await ExamRegistration.findOneAndUpdate(
-//       { "applicationInfo.transactionId": order_id },
-//       {
-//         $set: {
-//           "applicationInfo.paymentStatus": "paid",
-//           "applicationInfo.paymentDate": new Date(),
-//           "applicationInfo.transactionId": payment_id, // replace order ID with payment ID
-//         },
-//       }
-//     );
-
-//     res.status(200).json({ msg: "Payment verified successfully" });
-//   } catch (err) {
-//     console.error("❌ Verification Error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
-
-
 
 export const verifyPayment = async (req, res) => {
   try {
@@ -177,11 +310,17 @@ export const verifyPayment = async (req, res) => {
     if (!order_id || !payment_id || !signature) {
       return res.status(400).json({ msg: "Missing payment details" });
     }
+    ///
+        console.log("🟢 Verify Payment Request Received:");
+    console.log("order_id:", order_id);
+    console.log("payment_id:", payment_id);
+    console.log("signature:", signature);
 
     const generatedSignature = createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(order_id + "|" + payment_id)
       .digest("hex");
 
+    console.log("🔐 Generated Signature:", generatedSignature);
     if (generatedSignature === signature) {
       // Update registration or mark as paid here if needed
       return res.status(200).json({ msg: "Payment verified successfully" });
