@@ -519,6 +519,9 @@ export const adminMarkStepPassed = async (req, res) => {
       return paper;
     };
 
+
+    
+
     // Step 1
     if (!user.progression.step1) user.progression.step1 = {};
     if (!user.progression.step1.papers) user.progression.step1.papers = {};
