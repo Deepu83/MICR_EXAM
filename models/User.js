@@ -86,8 +86,8 @@ const ProfileSchema = new mongoose.Schema(
 const PaperSchema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ["not_started", "in_progress", "passed", "failed"],
-    default: "not_started",
+    enum: ["in_progress", "passed", "failed","closed","open"],
+    default: "closed",
   },
   completedDate: { type: Date, default: null },
   applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
@@ -99,8 +99,8 @@ const Step1Schema = new mongoose.Schema({
     paper1: {
       status: {
         type: String,
-        enum: ["not_started", "in_progress", "passed", "failed","absent"],
-        default: "not_started",
+        enum: ["open", "in_progress", "passed", "failed","absent","closed"],
+        default: "closed",
       },
       completedDate: { type: Date, default: null },
       // applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
@@ -109,18 +109,17 @@ const Step1Schema = new mongoose.Schema({
     paper2: {
       status: {
         type: String,
-        enum: ["not_started", "in_progress", "passed", "failed","absent"],
-        default: "not_started",
+        enum: ["open", "in_progress", "passed", "failed","absent","closed"],
+        default: "closed",
       },
       completedDate: { type: Date, default: null },
-      // applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
       applicationId: { type: String, default: null },
     },
   },
   overallStatus: {
     type: String,
-    enum: ["not_started", "in_progress", "passed", "failed","absent"],
-    default: "not_started",
+    enum: ["open", "in_progress", "passed", "failed","absent","closed"],
+    default: "closed",
   },
   completedDate: { type: Date, default: null },
   allPapersPassed: { type: Boolean, default: false },
@@ -131,8 +130,8 @@ const Step1Schema = new mongoose.Schema({
 const Step2Schema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ["not_started", "in_progress", "passed", "failed","absent"],
-    default: "not_started",
+    enum: ["open", "in_progress", "passed", "failed","absent","closed"],
+    default: "closed",
   },
   completedDate: { type: Date, default: null },
   // applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
@@ -143,8 +142,8 @@ const Step2Schema = new mongoose.Schema({
 const Step3PartSchema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ["locked", "not_started", "passed", "failed","absent"],
-    default: "locked",
+    enum: ["open", "not_started", "passed", "failed","absent","closed"],
+    default: "closed",
   },
   completedDate: { type: Date, default: null },
   // applicationId: { type: mongoose.Schema.Types.ObjectId, ref: "Application", default: null },
