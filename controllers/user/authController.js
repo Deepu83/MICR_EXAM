@@ -190,6 +190,7 @@ export const login = async (req, res) => {
 //     const { userId } = req.params;
 
 //     // Parse JSON fields
+//     console.log("hi")
 //     const application = req.body.application
 //       ? typeof req.body.application === "string"
 //         ? JSON.parse(req.body.application)
@@ -285,26 +286,32 @@ export const login = async (req, res) => {
 //     res.status(500).json({ msg: "Server error", error: err.message });
 //   }
 // };
+
+
+
+
 export const updateProfile = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Safely parse JSON fields
-    const application =
-      typeof req.body.application === "string"
+    // Parse JSON fields
+    const application = req.body.application
+      ? typeof req.body.application === "string"
         ? JSON.parse(req.body.application)
-        : req.body.application || {};
-
-    const education =
-      typeof req.body.education === "string"
+        : req.body.application
+      : {};
+    const education = req.body.education
+      ? typeof req.body.education === "string"
         ? JSON.parse(req.body.education)
-        : req.body.education || {};
+        : req.body.education
+      : {};
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    // --- 📂 Handle file uploads ---
+    // Initialize documents
     const uploadedDocuments = { ...(user.profile?.documents || {}) };
+
     if (req.files && Object.keys(req.files).length > 0) {
       const folderMap = {
         photo: "users/photo",
@@ -319,6 +326,7 @@ export const updateProfile = async (req, res) => {
           const file = req.files[key][0];
           const filePath = path.resolve(file.path);
 
+          // Upload to Cloudinary
           const upload = await cloudinary.uploader.upload(filePath, {
             folder: folderMap[key] || "users",
           });
@@ -337,7 +345,7 @@ export const updateProfile = async (req, res) => {
       }
     }
 
-    // --- 💾 Save Profile Info ---
+    // Save profile
     user.profile = {
       ...(user.profile ? user.profile.toObject() : {}),
       application: { ...(user.profile?.application || {}), ...application },
@@ -345,58 +353,39 @@ export const updateProfile = async (req, res) => {
       documents: uploadedDocuments,
       profileCompletedAt: new Date(),
     };
+
     user.profileCompleted = true;
 
-    // --- 🧩 PROGRESSION LOGIC ---
-    const prevProg = user.progression || {};
+    // --- PROGRESSION LOGIC ---
+    user.progression = user.progression || {};
+    user.progression.step1 = user.progression.step1 || {};
+    user.progression.step1.papers = user.progression.step1.papers || {};
 
-    // Step 1 papers
-    const paper1 = prevProg.step1?.papers?.paper1 || {
-      status: "closed",
-      completedDate: null,
-      applicationId: null,
-    };
-    const paper2 = prevProg.step1?.papers?.paper2 || {
-      status: "closed",
-      completedDate: null,
-      applicationId: null,
-    };
+    // Open Step1 papers if not passed yet
+    if (!user.progression.step1.papers.paper1?.status || user.progression.step1.papers.paper1.status !== "passed") {
+      user.progression.step1.papers.paper1 = {
+        ...user.progression.step1.papers.paper1,
+        status: "open",
+      };
+    }
+    if (!user.progression.step1.papers.paper2?.status || user.progression.step1.papers.paper2.status !== "passed") {
+      user.progression.step1.papers.paper2 = {
+        ...user.progression.step1.papers.paper2,
+        status: "open",
+      };
+    }
 
-    // Update statuses
-    const step1Status = "open"; // profile completed -> step 1 open
-    const step2Status =
-      prevProg.step1?.overallStatus === "passed" ? "open" : "closed";
-    const step3Status =
-      prevProg.step2?.overallStatus === "passed" ? "open" : "closed";
+    // Update Step1 overallStatus
+    user.progression.step1.overallStatus = "open";
+    user.progression.step1.completedDate = null;
+    user.progression.step1.allPapersPassed = false;
 
-    const currentLevel =
-      prevProg.step2?.overallStatus === "passed"
-        ? 3
-        : prevProg.step1?.overallStatus === "passed"
-        ? 2
-        : 1;
+    // Initialize Step2 & Step3 if not present
+    user.progression.step2 = user.progression.step2 || {};
+    user.progression.step3 = user.progression.step3 || {};
 
-    // --- ✅ Update Step 1 Papers ---
-    user.progression = {
-      step1: {
-        papers: {
-          paper1: { ...paper1, status: step1Status },
-          paper2: { ...paper2, status: step1Status },
-        },
-        overallStatus: step1Status,
-        completedDate:
-          step1Status === "passed" ? new Date() : prevProg.step1?.completedDate || null,
-      },
-      step2: {
-        ...(prevProg.step2 || {}),
-        overallStatus: step2Status,
-      },
-      step3: {
-        ...(prevProg.step3 || {}),
-        overallStatus: step3Status,
-      },
-      currentLevel,
-    };
+    // Set currentLevel to 1 (Step1 open)
+    user.progression.currentLevel = 1;
 
     await user.save();
 
@@ -410,6 +399,10 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
+
+
+
+
 
 
 // GET all users
@@ -546,6 +539,7 @@ export const adminMarkStepPassed = async (req, res) => {
       user.progression.step1.status = status;
       user.progression.step1.completedDate = now;
       user.progression.step1.overallStatus = status;
+      user.progression.step1.allPapersPassed = true;
     }
 
     // Step 2
