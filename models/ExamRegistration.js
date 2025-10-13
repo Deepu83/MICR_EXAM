@@ -27,7 +27,7 @@ examId: {
       // examCenter: { type: String, required: true },
       applicationStatus: {
         type: String,
-        enum: ["pending", "approved", "rejected", "appeared", "cancelled"],
+        enum: ["pending", "passed", "absent", "cancelled","failed"],
         default: "pending",
       },
       paymentStatus: {
@@ -52,7 +52,7 @@ examId: {
       grade: { type: String, default: null },
       resultStatus: {
         type: String,
-        enum: ["pending", "pass", "fail", "absent"],
+        enum: ["pending", "pass", "failed", "absent"],
         default: "pending",
       },
       examAttemptedDate: { type: Date, default: null },

@@ -99,7 +99,7 @@ const Step1Schema = new mongoose.Schema({
     paper1: {
       status: {
         type: String,
-        enum: ["not_started", "in_progress", "passed", "failed"],
+        enum: ["not_started", "in_progress", "passed", "failed","absent"],
         default: "not_started",
       },
       completedDate: { type: Date, default: null },
@@ -109,7 +109,7 @@ const Step1Schema = new mongoose.Schema({
     paper2: {
       status: {
         type: String,
-        enum: ["not_started", "in_progress", "passed", "failed"],
+        enum: ["not_started", "in_progress", "passed", "failed","absent"],
         default: "not_started",
       },
       completedDate: { type: Date, default: null },
@@ -119,7 +119,7 @@ const Step1Schema = new mongoose.Schema({
   },
   overallStatus: {
     type: String,
-    enum: ["not_started", "in_progress", "passed", "failed"],
+    enum: ["not_started", "in_progress", "passed", "failed","absent"],
     default: "not_started",
   },
   completedDate: { type: Date, default: null },
@@ -131,7 +131,7 @@ const Step1Schema = new mongoose.Schema({
 const Step2Schema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ["not_started", "in_progress", "passed", "failed"],
+    enum: ["not_started", "in_progress", "passed", "failed","absent"],
     default: "not_started",
   },
   completedDate: { type: Date, default: null },
@@ -143,7 +143,7 @@ const Step2Schema = new mongoose.Schema({
 const Step3PartSchema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ["locked", "not_started", "passed", "failed"],
+    enum: ["locked", "not_started", "passed", "failed","absent"],
     default: "locked",
   },
   completedDate: { type: Date, default: null },
