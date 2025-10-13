@@ -4,7 +4,6 @@ import mongoose from "mongoose";
 import Razorpay from "razorpay";
 import { createHmac } from "crypto";
 
-
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -133,6 +132,7 @@ export const verifyPaymentAndRegister = async (req, res) => {
     await registration.save();
 
     // Update user progression
+    console.log(examCode)
     user.progression = user.progression || {};
     switch (examCode) {
       case "1":
@@ -142,20 +142,27 @@ export const verifyPaymentAndRegister = async (req, res) => {
         user.progression.step1.papers.paper2 = user.progression.step1.papers.paper2 || {};
         user.progression.step1.papers.paper1.applicationId = registration.applicationNumber;
         user.progression.step1.papers.paper2.applicationId = registration.applicationNumber;
+
+      user.progression.step1.papers.paper1.status = "filled";
+user.progression.step1.papers.paper2.status = "filled";
+  user.progression.step1.overallStatus = "filled";
         break;
       case "2":
         user.progression.step2 = user.progression.step2 || {};
         user.progression.step2.applicationId = registration.applicationNumber;
+       user.progression.step2.status = "filled";
         break;
       case "3A":
         user.progression.step3 = user.progression.step3 || {};
         user.progression.step3.partA = user.progression.step3.partA || {};
         user.progression.step3.partA.applicationId = registration.applicationNumber;
+          user.progression.step3.partA.status = "filled";
         break;
       case "3B":
         user.progression.step3 = user.progression.step3 || {};
         user.progression.step3.partB = user.progression.step3.partB || {};
         user.progression.step3.partB.applicationId = registration.applicationNumber;
+        user.progression.step3.partB.status="filled"
         break;
     }
 
