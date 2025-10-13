@@ -16,6 +16,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { generateRegisterNo } from "../../utils/generateRegisterNo.js";
+import ExamRegistration from "../../models/ExamRegistration.js";
+import { CURSOR_FLAGS } from "mongodb";
+
 
 const JWT_SECRET =
   process.env.JWT_SECRET ||
@@ -86,9 +89,9 @@ export const register = async (req, res) => {
       passwordHash,
       registerNo,
     });
-// After creating user
-const waMessage = `Hello ${user.name}, your registration is successful! Reg No: ${user.registerNo}`;
-await sendWhatsApp("918057509308", waMessage);
+    // After creating user
+    const waMessage = `Hello ${user.name}, your registration is successful! Reg No: ${user.registerNo}`;
+    await sendWhatsApp("918057509308", waMessage);
     // Generate JWT token
     const token = jwt.sign({ id: user._id }, JWT_SECRET, {
       expiresIn: JWT_EXPIRES,
@@ -135,7 +138,7 @@ await sendWhatsApp("918057509308", waMessage);
       email: user.email,
       registerNo: user.registerNo,
       profile: user.profile,
-     
+
     });
   } catch (err) {
     console.error("❌ Registration error:", err);
@@ -165,11 +168,11 @@ export const login = async (req, res) => {
       name: user.name,
       email: user.email,
       mobileNumber: user.mobileNumber,
-        registerNo: user.registerNo,
+      registerNo: user.registerNo,
       aadhaarNumber: user.aadhaarNumber,
-registerNo:user.registerNo,
+      registerNo: user.registerNo,
       progression: user.progression || {},
-       profileCompleted:user.profileCompleted,
+      profileCompleted: user.profileCompleted,
       Login: "success",
     });
   } catch (err) {
@@ -253,22 +256,22 @@ export const updateProfile = async (req, res) => {
 
     user.profileCompleted = true;
     user.progression = {
-  ...(user.progression ? user.progression.toObject() : {}),
-  currentLevel: 1, // STEP-1 now available after profile update
-  step1: {
-    ...(user.progression?.step1 || {}),
-    papers: { ...(user.progression?.step1?.papers || {}) },
-    overallStatus: user.progression?.step1?.overallStatus || "not_started",
-    completedDate: user.progression?.step1?.completedDate || null,
-    allPapersPassed: user.progression?.step1?.allPapersPassed || false,
-  },
-  step2: {
-    ...(user.progression?.step2 || {}),
-  },
-  step3: {
-    ...(user.progression?.step3 || {}),
-  },
-};
+      ...(user.progression ? user.progression.toObject() : {}),
+      currentLevel: 1, // STEP-1 now available after profile update
+      step1: {
+        ...(user.progression?.step1 || {}),
+        papers: { ...(user.progression?.step1?.papers || {}) },
+        overallStatus: user.progression?.step1?.overallStatus || "not_started",
+        completedDate: user.progression?.step1?.completedDate || null,
+        allPapersPassed: user.progression?.step1?.allPapersPassed || false,
+      },
+      step2: {
+        ...(user.progression?.step2 || {}),
+      },
+      step3: {
+        ...(user.progression?.step3 || {}),
+      },
+    };
 
 
     await user.save();
@@ -363,9 +366,121 @@ export const markStepPassed = async (userId, step) => {
 
 
 
+// export const adminMarkStepPassed = async (req, res) => {
+//   try {
+//     const { userId, applicationId } = req.body;
+
+//     if (!userId) {
+//       return res.status(400).json({ msg: "userId is required" });
+//     }
+
+//     if (!applicationId) {
+//       return res.status(400).json({ msg: "applicationId is required" });
+//     }
+
+//     const user = await User.findById(userId);
+
+//     const aplID = await ExamRegistration.findOne({ applicationNumber: applicationId });
+
+
+//     const aplForPass = await ExamRegistration.findByIdAndUpdate(
+//       aplID,           // the document ID
+//       { "applicationInfo.applicationStatus": "pass" }, // the update
+//       { new: true }                          // return the updated document
+//     );
+//     console.log(aplForPass)
+//     if (!user) return res.status(404).json({ msg: "User not found" });
+
+//     const now = new Date();
+//     if (!user.progression) user.progression = {};
+
+//     let found = false;
+
+//     // Helper to safely mark any paper as passed
+//     const markPaper = (paper = {}) => {
+//       if (paper.applicationId === applicationId) {
+//         found = true;
+//         return { ...paper, status: "passed", completedDate: now, applicationId: paper.applicationId };
+//       }
+//       return paper;
+//     };
+
+//     // Step 1
+//     if (!user.progression.step1) user.progression.step1 = {};
+//     if (!user.progression.step1.papers) user.progression.step1.papers = {};
+//     user.progression.step1.papers.paper1 = markPaper(user.progression.step1.papers.paper1 || {});
+//     user.progression.step1.papers.paper2 = markPaper(user.progression.step1.papers.paper2 || {});
+//     if (
+//       user.progression.step1.papers.paper1.status === "passed" ||
+//       user.progression.step1.papers.paper2.status === "passed"
+//     ) {
+//       user.progression.step1.status = "passed";
+//       user.progression.step1.completedDate = now;
+//       user.progression.step1.overallStatus = "passed";
+//     }
+
+//     // Step 2
+//     if (!user.progression.step2) user.progression.step2 = {};
+//     if (user.progression.step2.papers) {
+//       for (const key in user.progression.step2.papers) {
+//         user.progression.step2.papers[key] = markPaper(user.progression.step2.papers[key]);
+//       }
+//       if (Object.values(user.progression.step2.papers).some(p => p.status === "passed")) {
+//         user.progression.step2.status = "passed";
+//         user.progression.step2.completedDate = now;
+//         user.progression.step2.overallStatus = "passed";
+//       }
+//     }
+//     if (user.progression.step2.applicationId === applicationId) {
+//       user.progression.step2.status = "passed";
+//       user.progression.step2.completedDate = now;
+//       user.progression.step2.overallStatus = "passed";
+//       found = true;
+//     }
+
+//     // Step 3
+//     if (!user.progression.step3) user.progression.step3 = {};
+//     if (!user.progression.step3.partA) user.progression.step3.partA = {};
+//     if (!user.progression.step3.partB) user.progression.step3.partB = {};
+
+//     user.progression.step3.partA = markPaper(user.progression.step3.partA);
+//     user.progression.step3.partB = markPaper(user.progression.step3.partB);
+
+//     if (!found) {
+//       return res.status(404).json({ msg: "ApplicationId not exist in user progression" });
+//     }
+
+//     // Update currentLevel
+//     if (user.progression.step1.status === "passed") user.progression.currentLevel = 2;
+//     if (user.progression.step2.status === "passed") user.progression.currentLevel = 3;
+
+//     // Check if all steps completed
+//     const allStepsPassed =
+//       user.progression.step1?.status === "passed" &&
+//       user.progression.step2?.status === "passed" &&
+//       user.progression.step3.partA?.status === "passed" &&
+//       user.progression.step3.partB?.status === "passed";
+
+//     if (allStepsPassed) {
+//       user.progression.allStepsCompleted = true;
+//       user.progression.completionDate = now;
+//     }
+
+//     await user.save();
+
+//     res.status(200).json({
+//       msg: `Application ${applicationId} marked as passed successfully`,
+//       progression: user.progression,
+//     });
+//   } catch (err) {
+//     console.error("Admin mark step passed error:", err);
+//     res.status(500).json({ msg: "Server error", error: err.message });
+//   }
+// };
+
 export const adminMarkStepPassed = async (req, res) => {
   try {
-    const { userId, applicationId } = req.body;
+    const { userId, applicationId, status } = req.body;
 
     if (!userId) {
       return res.status(400).json({ msg: "userId is required" });
@@ -375,19 +490,31 @@ export const adminMarkStepPassed = async (req, res) => {
       return res.status(400).json({ msg: "applicationId is required" });
     }
 
+    if (!status || !["passed", "failed", "absent"].includes(status)) {
+      return res.status(400).json({ msg: "Status must be 'passed', 'failed' or 'absent'" });
+    }
+
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
+
+    // Find the exam registration by applicationNumber
+    const aplDoc = await ExamRegistration.findOne({ applicationNumber: applicationId });
+    if (!aplDoc) return res.status(404).json({ msg: "Application not found" });
+
+    // Update ExamRegistration
+    aplDoc.applicationInfo.applicationStatus = status;
+    await aplDoc.save();
 
     const now = new Date();
     if (!user.progression) user.progression = {};
 
     let found = false;
 
-    // Helper to safely mark any paper as passed
-    const markPaper = (paper = {}) => {
+    // Helper to update paper status
+    const updatePaper = (paper = {}) => {
       if (paper.applicationId === applicationId) {
         found = true;
-        return { ...paper, status: "passed", completedDate: now, applicationId: paper.applicationId };
+        return { ...paper, status, completedDate: now, applicationId: paper.applicationId };
       }
       return paper;
     };
@@ -395,33 +522,33 @@ export const adminMarkStepPassed = async (req, res) => {
     // Step 1
     if (!user.progression.step1) user.progression.step1 = {};
     if (!user.progression.step1.papers) user.progression.step1.papers = {};
-    user.progression.step1.papers.paper1 = markPaper(user.progression.step1.papers.paper1 || {});
-    user.progression.step1.papers.paper2 = markPaper(user.progression.step1.papers.paper2 || {});
+    user.progression.step1.papers.paper1 = updatePaper(user.progression.step1.papers.paper1 || {});
+    user.progression.step1.papers.paper2 = updatePaper(user.progression.step1.papers.paper2 || {});
     if (
-      user.progression.step1.papers.paper1.status === "passed" ||
-      user.progression.step1.papers.paper2.status === "passed"
+      user.progression.step1.papers.paper1.status === status ||
+      user.progression.step1.papers.paper2.status === status
     ) {
-      user.progression.step1.status = "passed";
+      user.progression.step1.status = status;
       user.progression.step1.completedDate = now;
-      user.progression.step1.overallStatus = "passed";
+      user.progression.step1.overallStatus = status;
     }
 
     // Step 2
     if (!user.progression.step2) user.progression.step2 = {};
     if (user.progression.step2.papers) {
       for (const key in user.progression.step2.papers) {
-        user.progression.step2.papers[key] = markPaper(user.progression.step2.papers[key]);
+        user.progression.step2.papers[key] = updatePaper(user.progression.step2.papers[key]);
       }
-      if (Object.values(user.progression.step2.papers).some(p => p.status === "passed")) {
-        user.progression.step2.status = "passed";
+      if (Object.values(user.progression.step2.papers).some(p => p.status === status)) {
+        user.progression.step2.status = status;
         user.progression.step2.completedDate = now;
-        user.progression.step2.overallStatus = "passed";
+        user.progression.step2.overallStatus = status;
       }
     }
     if (user.progression.step2.applicationId === applicationId) {
-      user.progression.step2.status = "passed";
+      user.progression.step2.status = status;
       user.progression.step2.completedDate = now;
-      user.progression.step2.overallStatus = "passed";
+      user.progression.step2.overallStatus = status;
       found = true;
     }
 
@@ -430,18 +557,18 @@ export const adminMarkStepPassed = async (req, res) => {
     if (!user.progression.step3.partA) user.progression.step3.partA = {};
     if (!user.progression.step3.partB) user.progression.step3.partB = {};
 
-    user.progression.step3.partA = markPaper(user.progression.step3.partA);
-    user.progression.step3.partB = markPaper(user.progression.step3.partB);
+    user.progression.step3.partA = updatePaper(user.progression.step3.partA);
+    user.progression.step3.partB = updatePaper(user.progression.step3.partB);
 
     if (!found) {
       return res.status(404).json({ msg: "ApplicationId not exist in user progression" });
     }
 
-    // Update currentLevel
+    // Update currentLevel only if passed
     if (user.progression.step1.status === "passed") user.progression.currentLevel = 2;
     if (user.progression.step2.status === "passed") user.progression.currentLevel = 3;
 
-    // Check if all steps completed
+    // Check if all steps completed (only for passed)
     const allStepsPassed =
       user.progression.step1?.status === "passed" &&
       user.progression.step2?.status === "passed" &&
@@ -456,14 +583,11 @@ export const adminMarkStepPassed = async (req, res) => {
     await user.save();
 
     res.status(200).json({
-      msg: `Application ${applicationId} marked as passed successfully`,
+      msg: `Application ${applicationId} marked as ${status} successfully`,
       progression: user.progression,
     });
   } catch (err) {
-    console.error("Admin mark step passed error:", err);
+    console.error("Admin mark step status error:", err);
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
-
-
-
