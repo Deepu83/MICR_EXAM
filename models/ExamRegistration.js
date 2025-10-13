@@ -12,12 +12,15 @@ const ExamRegistrationSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    examId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Exam",
-      required: true,
-    },
-
+    // examId: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Exam",
+    //   required: true,
+    // },
+examId: {
+  type: String,   // <- Change to string
+  required: true,
+},
     applicationInfo: {
       applicationDate: { type: Date, default: Date.now },
       examDate: { type: Date, required: true },
