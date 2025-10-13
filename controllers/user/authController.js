@@ -185,28 +185,126 @@ export const login = async (req, res) => {
 
 
 
+// export const updateProfile = async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+
+//     // Parse JSON fields
+//     const application = req.body.application
+//       ? typeof req.body.application === "string"
+//         ? JSON.parse(req.body.application)
+//         : req.body.application
+//       : {};
+//     const education = req.body.education
+//       ? typeof req.body.education === "string"
+//         ? JSON.parse(req.body.education)
+//         : req.body.education
+//       : {};
+
+//     const user = await User.findById(userId);
+//     if (!user) return res.status(404).json({ msg: "User not found" });
+
+//     // Initialize documents
+//     const uploadedDocuments = { ...(user.profile?.documents || {}) };
+
+//     if (req.files && Object.keys(req.files).length > 0) {
+//       const folderMap = {
+//         photo: "users/photo",
+//         signature: "users/signature",
+//         id_proof: "users/identity",
+//         education: "users/education",
+//         address: "users/address",
+//       };
+
+//       console.log("Files received:", req.files);
+
+//       for (const key in req.files) {
+//         if (req.files[key].length > 0) {
+//           const file = req.files[key][0];
+//           const filePath = path.resolve(file.path);
+
+//           // Upload to Cloudinary
+//           const upload = await cloudinary.uploader.upload(filePath, {
+//             folder: folderMap[key] || "users",
+//           });
+
+//           console.log("Cloudinary upload result:", upload); // 🔥 check URL
+
+//           uploadedDocuments[key] = {
+//             url: upload.secure_url,      // actual Cloudinary URL
+//             public_id: upload.public_id,
+//             name: file.originalname,
+//             type: file.mimetype,
+//             size: file.size,
+//             lastModified: new Date(),
+//           };
+
+//           // Delete local tmp file
+//           fs.unlinkSync(filePath);
+//         }
+//       }
+//     }
+
+//     // Save profile
+//     user.profile = {
+//       ...(user.profile ? user.profile.toObject() : {}),
+//       application: { ...(user.profile?.application || {}), ...application },
+//       education: { ...(user.profile?.education || {}), ...education },
+//       documents: uploadedDocuments,
+//       profileCompletedAt: new Date(),
+//     };
+
+//     user.profileCompleted = true;
+//     user.progression = {
+//       ...(user.progression ? user.progression.toObject() : {}),
+//       currentLevel: 1, // STEP-1 now available after profile update
+//       step1: {
+//         ...(user.progression?.step1 || {}),
+//         papers: { ...(user.progression?.step1?.papers || {}) },
+//         overallStatus: user.progression?.step1?.overallStatus || "closed",
+//         completedDate: user.progression?.step1?.completedDate || null,
+//         allPapersPassed: user.progression?.step1?.allPapersPassed || false,
+//       },
+//       step2: {
+//         ...(user.progression?.step2 || {}),
+//       },
+//       step3: {
+//         ...(user.progression?.step3 || {}),
+//       },
+//     };
+
+
+//     await user.save();
+
+//     res.status(200).json({
+//       msg: "Profile updated successfully",
+//       profile: user.profile,
+//     });
+//   } catch (err) {
+//     console.error("Profile update error:", err);
+//     res.status(500).json({ msg: "Server error", error: err.message });
+//   }
+// };
 export const updateProfile = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Parse JSON fields
-    const application = req.body.application
-      ? typeof req.body.application === "string"
+    // Safely parse JSON fields
+    const application =
+      typeof req.body.application === "string"
         ? JSON.parse(req.body.application)
-        : req.body.application
-      : {};
-    const education = req.body.education
-      ? typeof req.body.education === "string"
+        : req.body.application || {};
+
+    const education =
+      typeof req.body.education === "string"
         ? JSON.parse(req.body.education)
-        : req.body.education
-      : {};
+        : req.body.education || {};
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    // Initialize documents
+    // --- 📂 Handle file uploads ---
     const uploadedDocuments = { ...(user.profile?.documents || {}) };
-
     if (req.files && Object.keys(req.files).length > 0) {
       const folderMap = {
         photo: "users/photo",
@@ -216,22 +314,17 @@ export const updateProfile = async (req, res) => {
         address: "users/address",
       };
 
-      console.log("Files received:", req.files);
-
       for (const key in req.files) {
         if (req.files[key].length > 0) {
           const file = req.files[key][0];
           const filePath = path.resolve(file.path);
 
-          // Upload to Cloudinary
           const upload = await cloudinary.uploader.upload(filePath, {
             folder: folderMap[key] || "users",
           });
 
-          console.log("Cloudinary upload result:", upload); // 🔥 check URL
-
           uploadedDocuments[key] = {
-            url: upload.secure_url,      // actual Cloudinary URL
+            url: upload.secure_url,
             public_id: upload.public_id,
             name: file.originalname,
             type: file.mimetype,
@@ -239,13 +332,12 @@ export const updateProfile = async (req, res) => {
             lastModified: new Date(),
           };
 
-          // Delete local tmp file
           fs.unlinkSync(filePath);
         }
       }
     }
 
-    // Save profile
+    // --- 💾 Save Profile Info ---
     user.profile = {
       ...(user.profile ? user.profile.toObject() : {}),
       application: { ...(user.profile?.application || {}), ...application },
@@ -253,32 +345,65 @@ export const updateProfile = async (req, res) => {
       documents: uploadedDocuments,
       profileCompletedAt: new Date(),
     };
-
     user.profileCompleted = true;
-    user.progression = {
-      ...(user.progression ? user.progression.toObject() : {}),
-      currentLevel: 1, // STEP-1 now available after profile update
-      step1: {
-        ...(user.progression?.step1 || {}),
-        papers: { ...(user.progression?.step1?.papers || {}) },
-        overallStatus: user.progression?.step1?.overallStatus || "not_started",
-        completedDate: user.progression?.step1?.completedDate || null,
-        allPapersPassed: user.progression?.step1?.allPapersPassed || false,
-      },
-      step2: {
-        ...(user.progression?.step2 || {}),
-      },
-      step3: {
-        ...(user.progression?.step3 || {}),
-      },
+
+    // --- 🧩 PROGRESSION LOGIC ---
+    const prevProg = user.progression || {};
+
+    // Step 1 papers
+    const paper1 = prevProg.step1?.papers?.paper1 || {
+      status: "closed",
+      completedDate: null,
+      applicationId: null,
+    };
+    const paper2 = prevProg.step1?.papers?.paper2 || {
+      status: "closed",
+      completedDate: null,
+      applicationId: null,
     };
 
+    // Update statuses
+    const step1Status = "open"; // profile completed -> step 1 open
+    const step2Status =
+      prevProg.step1?.overallStatus === "passed" ? "open" : "closed";
+    const step3Status =
+      prevProg.step2?.overallStatus === "passed" ? "open" : "closed";
+
+    const currentLevel =
+      prevProg.step2?.overallStatus === "passed"
+        ? 3
+        : prevProg.step1?.overallStatus === "passed"
+        ? 2
+        : 1;
+
+    // --- ✅ Update Step 1 Papers ---
+    user.progression = {
+      step1: {
+        papers: {
+          paper1: { ...paper1, status: step1Status },
+          paper2: { ...paper2, status: step1Status },
+        },
+        overallStatus: step1Status,
+        completedDate:
+          step1Status === "passed" ? new Date() : prevProg.step1?.completedDate || null,
+      },
+      step2: {
+        ...(prevProg.step2 || {}),
+        overallStatus: step2Status,
+      },
+      step3: {
+        ...(prevProg.step3 || {}),
+        overallStatus: step3Status,
+      },
+      currentLevel,
+    };
 
     await user.save();
 
     res.status(200).json({
       msg: "Profile updated successfully",
       profile: user.profile,
+      progression: user.progression,
     });
   } catch (err) {
     console.error("Profile update error:", err);
@@ -365,119 +490,6 @@ export const markStepPassed = async (userId, step) => {
 
 
 
-
-// export const adminMarkStepPassed = async (req, res) => {
-//   try {
-//     const { userId, applicationId } = req.body;
-
-//     if (!userId) {
-//       return res.status(400).json({ msg: "userId is required" });
-//     }
-
-//     if (!applicationId) {
-//       return res.status(400).json({ msg: "applicationId is required" });
-//     }
-
-//     const user = await User.findById(userId);
-
-//     const aplID = await ExamRegistration.findOne({ applicationNumber: applicationId });
-
-
-//     const aplForPass = await ExamRegistration.findByIdAndUpdate(
-//       aplID,           // the document ID
-//       { "applicationInfo.applicationStatus": "pass" }, // the update
-//       { new: true }                          // return the updated document
-//     );
-//     console.log(aplForPass)
-//     if (!user) return res.status(404).json({ msg: "User not found" });
-
-//     const now = new Date();
-//     if (!user.progression) user.progression = {};
-
-//     let found = false;
-
-//     // Helper to safely mark any paper as passed
-//     const markPaper = (paper = {}) => {
-//       if (paper.applicationId === applicationId) {
-//         found = true;
-//         return { ...paper, status: "passed", completedDate: now, applicationId: paper.applicationId };
-//       }
-//       return paper;
-//     };
-
-//     // Step 1
-//     if (!user.progression.step1) user.progression.step1 = {};
-//     if (!user.progression.step1.papers) user.progression.step1.papers = {};
-//     user.progression.step1.papers.paper1 = markPaper(user.progression.step1.papers.paper1 || {});
-//     user.progression.step1.papers.paper2 = markPaper(user.progression.step1.papers.paper2 || {});
-//     if (
-//       user.progression.step1.papers.paper1.status === "passed" ||
-//       user.progression.step1.papers.paper2.status === "passed"
-//     ) {
-//       user.progression.step1.status = "passed";
-//       user.progression.step1.completedDate = now;
-//       user.progression.step1.overallStatus = "passed";
-//     }
-
-//     // Step 2
-//     if (!user.progression.step2) user.progression.step2 = {};
-//     if (user.progression.step2.papers) {
-//       for (const key in user.progression.step2.papers) {
-//         user.progression.step2.papers[key] = markPaper(user.progression.step2.papers[key]);
-//       }
-//       if (Object.values(user.progression.step2.papers).some(p => p.status === "passed")) {
-//         user.progression.step2.status = "passed";
-//         user.progression.step2.completedDate = now;
-//         user.progression.step2.overallStatus = "passed";
-//       }
-//     }
-//     if (user.progression.step2.applicationId === applicationId) {
-//       user.progression.step2.status = "passed";
-//       user.progression.step2.completedDate = now;
-//       user.progression.step2.overallStatus = "passed";
-//       found = true;
-//     }
-
-//     // Step 3
-//     if (!user.progression.step3) user.progression.step3 = {};
-//     if (!user.progression.step3.partA) user.progression.step3.partA = {};
-//     if (!user.progression.step3.partB) user.progression.step3.partB = {};
-
-//     user.progression.step3.partA = markPaper(user.progression.step3.partA);
-//     user.progression.step3.partB = markPaper(user.progression.step3.partB);
-
-//     if (!found) {
-//       return res.status(404).json({ msg: "ApplicationId not exist in user progression" });
-//     }
-
-//     // Update currentLevel
-//     if (user.progression.step1.status === "passed") user.progression.currentLevel = 2;
-//     if (user.progression.step2.status === "passed") user.progression.currentLevel = 3;
-
-//     // Check if all steps completed
-//     const allStepsPassed =
-//       user.progression.step1?.status === "passed" &&
-//       user.progression.step2?.status === "passed" &&
-//       user.progression.step3.partA?.status === "passed" &&
-//       user.progression.step3.partB?.status === "passed";
-
-//     if (allStepsPassed) {
-//       user.progression.allStepsCompleted = true;
-//       user.progression.completionDate = now;
-//     }
-
-//     await user.save();
-
-//     res.status(200).json({
-//       msg: `Application ${applicationId} marked as passed successfully`,
-//       progression: user.progression,
-//     });
-//   } catch (err) {
-//     console.error("Admin mark step passed error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
-
 export const adminMarkStepPassed = async (req, res) => {
   try {
     const { userId, applicationId, status } = req.body;
@@ -520,7 +532,7 @@ export const adminMarkStepPassed = async (req, res) => {
     };
 
 
-    
+
 
     // Step 1
     if (!user.progression.step1) user.progression.step1 = {};
