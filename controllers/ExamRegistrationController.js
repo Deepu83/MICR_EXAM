@@ -27,7 +27,7 @@ export const createOrder = async (req, res) => {
 
     const order = await razorpay.orders.create(orderOptions);
 
-        // ✅ Log order details to console
+    // ✅ Log order details to console
     console.log("✅ Razorpay Order Created:");
     console.log("Order ID:", order.id);
     console.log("Amount (in paise):", order.amount);
@@ -116,7 +116,7 @@ export const verifyPaymentAndRegister = async (req, res) => {
       applicationNumber,
       userId: new mongoose.Types.ObjectId(userId),
 
-        examId: examId, //
+      examId: examId, //
       applicationInfo: {
         examDate,
         paymentAmount,
@@ -135,34 +135,60 @@ export const verifyPaymentAndRegister = async (req, res) => {
     console.log(examCode)
     user.progression = user.progression || {};
     switch (examCode) {
-      case "1":
-        user.progression.step1 = user.progression.step1 || {};
-        user.progression.step1.papers = user.progression.step1.papers || {};
-        user.progression.step1.papers.paper1 = user.progression.step1.papers.paper1 || {};
-        user.progression.step1.papers.paper2 = user.progression.step1.papers.paper2 || {};
-        user.progression.step1.papers.paper1.applicationId = registration.applicationNumber;
-        user.progression.step1.papers.paper2.applicationId = registration.applicationNumber;
+      // case "1":
+      //   user.progression.step1 = user.progression.step1 || {};
+      //   user.progression.step1.papers = user.progression.step1.papers || {};
+      //   user.progression.step1.papers.paper1 = user.progression.step1.papers.paper1 || {};
+      //   user.progression.step1.papers.paper2 = user.progression.step1.papers.paper2 || {};
+      //   user.progression.step1.papers.paper1.applicationId = registration.applicationNumber;
+      //   user.progression.step1.papers.paper2.applicationId = registration.applicationNumber;
+      //   user.progression.step1.papers.paper1.status = "filled";
+      //   user.progression.step1.papers.paper2.status = "filled";
+      //   user.progression.step1.overallStatus = "filled";
+        // break;
+        case "1A":
+    user.progression.step1 = user.progression.step1 || {};
+    user.progression.step1.papers = user.progression.step1.papers || {};
 
-      user.progression.step1.papers.paper1.status = "filled";
-user.progression.step1.papers.paper2.status = "filled";
-  user.progression.step1.overallStatus = "filled";
-        break;
+    // Update only paper1
+    user.progression.step1.papers.paper1 = {
+      paid: true,
+      paymentId: payment_id,       // use the correct variable
+      date: examDate,
+      applicationId: registration.applicationNumber,
+      status: "filled",
+    };
+    break;
+
+  case "1B":
+    user.progression.step1 = user.progression.step1 || {};
+    user.progression.step1.papers = user.progression.step1.papers || {};
+
+    // Update only paper2
+    user.progression.step1.papers.paper2 = {
+      paid: true,
+      paymentId: payment_id,       // use the correct variable
+      date: examDate,
+      applicationId: registration.applicationNumber,
+      status: "filled",
+    };
+    break;
       case "2":
         user.progression.step2 = user.progression.step2 || {};
         user.progression.step2.applicationId = registration.applicationNumber;
-       user.progression.step2.status = "filled";
+        user.progression.step2.status = "filled";
         break;
       case "3A":
         user.progression.step3 = user.progression.step3 || {};
         user.progression.step3.partA = user.progression.step3.partA || {};
         user.progression.step3.partA.applicationId = registration.applicationNumber;
-          user.progression.step3.partA.status = "filled";
+        user.progression.step3.partA.status = "filled";
         break;
       case "3B":
         user.progression.step3 = user.progression.step3 || {};
         user.progression.step3.partB = user.progression.step3.partB || {};
         user.progression.step3.partB.applicationId = registration.applicationNumber;
-        user.progression.step3.partB.status="filled"
+        user.progression.step3.partB.status = "filled"
         break;
     }
 
