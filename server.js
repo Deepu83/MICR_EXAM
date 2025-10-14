@@ -26,7 +26,9 @@ app.use("/api/registrations", examRegistrationRoutes);
 
 // Sample test route
 app.get("/", (req, res) => res.send("🚀 Express + MongoDB running successfully!"));
-
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 // Start server after DB connection
 const startServer = async () => {
   try {
@@ -37,5 +39,6 @@ const startServer = async () => {
     console.error("❌ Failed to start server:", err.message);
   }
 };
+
 
 startServer();
