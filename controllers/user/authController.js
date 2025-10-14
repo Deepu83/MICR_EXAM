@@ -5,8 +5,9 @@
 // import fs from "fs";
 // import path from "path";
 // import { generateRegisterNo } from "../../utils/generateRegisterNo.js";
-// import cloudinary from "../../config/cloudinary.js";
-
+import cloudinary from "../../config/cloudinary.js";
+import fs from "fs";
+import path from "path";
 import dotenv from "dotenv";
 dotenv.config(); // Make sure env variables are loaded at the very top
 // import { sendSMS } from "../../utils/sendWhatsApp.js"; // import our utility
@@ -185,107 +186,6 @@ export const login = async (req, res) => {
 
 
 
-// export const updateProfile = async (req, res) => {
-//   try {
-//     const { userId } = req.params;
-
-//     // Parse JSON fields
-//     console.log("hi")
-//     const application = req.body.application
-//       ? typeof req.body.application === "string"
-//         ? JSON.parse(req.body.application)
-//         : req.body.application
-//       : {};
-//     const education = req.body.education
-//       ? typeof req.body.education === "string"
-//         ? JSON.parse(req.body.education)
-//         : req.body.education
-//       : {};
-
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ msg: "User not found" });
-
-//     // Initialize documents
-//     const uploadedDocuments = { ...(user.profile?.documents || {}) };
-
-//     if (req.files && Object.keys(req.files).length > 0) {
-//       const folderMap = {
-//         photo: "users/photo",
-//         signature: "users/signature",
-//         id_proof: "users/identity",
-//         education: "users/education",
-//         address: "users/address",
-//       };
-
-//       console.log("Files received:", req.files);
-
-//       for (const key in req.files) {
-//         if (req.files[key].length > 0) {
-//           const file = req.files[key][0];
-//           const filePath = path.resolve(file.path);
-
-//           // Upload to Cloudinary
-//           const upload = await cloudinary.uploader.upload(filePath, {
-//             folder: folderMap[key] || "users",
-//           });
-
-//           console.log("Cloudinary upload result:", upload); // 🔥 check URL
-
-//           uploadedDocuments[key] = {
-//             url: upload.secure_url,      // actual Cloudinary URL
-//             public_id: upload.public_id,
-//             name: file.originalname,
-//             type: file.mimetype,
-//             size: file.size,
-//             lastModified: new Date(),
-//           };
-
-//           // Delete local tmp file
-//           fs.unlinkSync(filePath);
-//         }
-//       }
-//     }
-
-//     // Save profile
-//     user.profile = {
-//       ...(user.profile ? user.profile.toObject() : {}),
-//       application: { ...(user.profile?.application || {}), ...application },
-//       education: { ...(user.profile?.education || {}), ...education },
-//       documents: uploadedDocuments,
-//       profileCompletedAt: new Date(),
-//     };
-
-//     user.profileCompleted = true;
-//     user.progression = {
-//       ...(user.progression ? user.progression.toObject() : {}),
-//       currentLevel: 1, // STEP-1 now available after profile update
-//       step1: {
-//         ...(user.progression?.step1 || {}),
-//         papers: { ...(user.progression?.step1?.papers || {}) },
-//         overallStatus: user.progression?.step1?.overallStatus || "closed",
-//         completedDate: user.progression?.step1?.completedDate || null,
-//         allPapersPassed: user.progression?.step1?.allPapersPassed || false,
-//       },
-//       step2: {
-//         ...(user.progression?.step2 || {}),
-//       },
-//       step3: {
-//         ...(user.progression?.step3 || {}),
-//       },
-//     };
-
-
-//     await user.save();
-
-//     res.status(200).json({
-//       msg: "Profile updated successfully",
-//       profile: user.profile,
-//     });
-//   } catch (err) {
-//     console.error("Profile update error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
 
 
 
@@ -419,7 +319,7 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// GET user by ID
+// GET user by ID Admin pannel Api 
 export const getUserById = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -429,6 +329,7 @@ export const getUserById = async (req, res) => {
     res.status(200).json({
       msg: "User fetched successfully",
       user,
+      centers: user.profile?.application?.centers || {}
     });
   } catch (err) {
     console.error("Error fetching user:", err);
@@ -585,6 +486,7 @@ export const adminMarkStepPassed = async (req, res) => {
       user.progression.step3.partB?.status === "passed";
 
     if (allStepsPassed) {
+      user.progression.currentLevel = 4;
       user.progression.allStepsCompleted = true;
       user.progression.completionDate = now;
     }
