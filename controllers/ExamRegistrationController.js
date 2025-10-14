@@ -135,17 +135,17 @@ export const verifyPaymentAndRegister = async (req, res) => {
     console.log(examCode)
     user.progression = user.progression || {};
     switch (examCode) {
-      // case "1":
-      //   user.progression.step1 = user.progression.step1 || {};
-      //   user.progression.step1.papers = user.progression.step1.papers || {};
-      //   user.progression.step1.papers.paper1 = user.progression.step1.papers.paper1 || {};
-      //   user.progression.step1.papers.paper2 = user.progression.step1.papers.paper2 || {};
-      //   user.progression.step1.papers.paper1.applicationId = registration.applicationNumber;
-      //   user.progression.step1.papers.paper2.applicationId = registration.applicationNumber;
-      //   user.progression.step1.papers.paper1.status = "filled";
-      //   user.progression.step1.papers.paper2.status = "filled";
-      //   user.progression.step1.overallStatus = "filled";
-        // break;
+      case "1":
+        user.progression.step1 = user.progression.step1 || {};
+        user.progression.step1.papers = user.progression.step1.papers || {};
+        user.progression.step1.papers.paper1 = user.progression.step1.papers.paper1 || {};
+        user.progression.step1.papers.paper2 = user.progression.step1.papers.paper2 || {};
+        user.progression.step1.papers.paper1.applicationId = registration.applicationNumber;
+        user.progression.step1.papers.paper2.applicationId = registration.applicationNumber;
+        user.progression.step1.papers.paper1.status = "filled";
+        user.progression.step1.papers.paper2.status = "filled";
+        user.progression.step1.overallStatus = "filled";
+        break;
         case "1A":
     user.progression.step1 = user.progression.step1 || {};
     user.progression.step1.papers = user.progression.step1.papers || {};
