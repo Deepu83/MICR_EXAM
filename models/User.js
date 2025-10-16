@@ -7,8 +7,9 @@ const FileSchema = new mongoose.Schema({
   name: { type: String },
   type: { type: String },
   size: { type: Number },
-    url: String,
+  url: String,
   lastModified: { type: Date },
+
 });
 
 // Education details structure
@@ -121,6 +122,7 @@ const Step1Schema = new mongoose.Schema({
     enum: ["open", "filled", "passed", "failed","absent","closed"],
     default: "closed",
   },
+  applicationId: { type: String, default: null },
   completedDate: { type: Date, default: null },
   allPapersPassed: { type: Boolean, default: false },
 });

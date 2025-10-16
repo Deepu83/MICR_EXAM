@@ -185,15 +185,10 @@ export const login = async (req, res) => {
 
 
 
-
-
-
-
-
-
 export const updateProfile = async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log("🟡 Raw request body:", req.body);
 
     // Parse JSON fields
     const application = req.body.application
@@ -210,9 +205,16 @@ export const updateProfile = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    // Initialize documents
-    const uploadedDocuments = { ...(user.profile?.documents || {}) };
+    // Ensure profile exists
+    user.profile = user.profile || {};
+    user.profile.application = user.profile.application || {};
+    user.profile.education = user.profile.education || {};
+    user.profile.documents = user.profile.documents || {};
 
+    // Initialize documents
+    const uploadedDocuments = { ...user.profile.documents };
+
+    // Upload files if present
     if (req.files && Object.keys(req.files).length > 0) {
       const folderMap = {
         photo: "users/photo",
@@ -220,6 +222,9 @@ export const updateProfile = async (req, res) => {
         id_proof: "users/identity",
         education: "users/education",
         address: "users/address",
+        registrationCertificate: "users/registrationCertificate",
+        mbbsCertificate: "users/mbbs",
+        pgCertificate: "users/pg",
       };
 
       for (const key in req.files) {
@@ -227,12 +232,11 @@ export const updateProfile = async (req, res) => {
           const file = req.files[key][0];
           const filePath = path.resolve(file.path);
 
-          // Upload to Cloudinary
           const upload = await cloudinary.uploader.upload(filePath, {
             folder: folderMap[key] || "users",
           });
 
-          uploadedDocuments[key] = {
+          const fileData = {
             url: upload.secure_url,
             public_id: upload.public_id,
             name: file.originalname,
@@ -241,51 +245,99 @@ export const updateProfile = async (req, res) => {
             lastModified: new Date(),
           };
 
-          fs.unlinkSync(filePath);
+          // Map uploaded file to the correct schema path
+          if (key === "mbbsCertificate") {
+            user.profile.education.mbbs = user.profile.education.mbbs || {};
+            user.profile.education.mbbs.certificate = fileData;
+            user.markModified("profile.education.mbbs.certificate");
+          } else if (key === "pgCertificate") {
+            user.profile.education.pg = user.profile.education.pg || {};
+            user.profile.education.pg.certificate = fileData;
+            user.markModified("profile.education.pg.certificate");
+          } else if (key === "registrationCertificate") {
+            user.profile.application.registrationCertificate = fileData;
+            user.markModified("profile.application.registrationCertificate");
+          } else {
+            uploadedDocuments[key] = fileData;
+          }
+
+          fs.unlinkSync(filePath); // remove temp file
         }
       }
     }
 
-    // Save profile
-    user.profile = {
-      ...(user.profile ? user.profile.toObject() : {}),
-      application: { ...(user.profile?.application || {}), ...application },
-      education: { ...(user.profile?.education || {}), ...education },
-      documents: uploadedDocuments,
-      profileCompletedAt: new Date(),
-    };
+    // Merge new data
+//     // Merge MBBS
+// user.profile.education.mbbs = {
+//   ...(user.profile.education.mbbs || {}),
+//   ...(education.mbbs || {}),
+// };
 
-    user.profileCompleted = true;
+// // Merge PG
+// user.profile.education.pg = {
+//   ...(user.profile.education.pg || {}),
+//   ...(education.pg || {}),
+// };
+//     user.profile.application = { ...user.profile.application, ...application };
+//     user.profile.education = { ...user.profile.education, ...education };
+//     user.profile.documents = uploadedDocuments;
+//     user.profile.profileCompletedAt = new Date();
+//     user.profileCompleted = true;
+
+
+
+user.profile.application = {
+  ...user.profile.application,
+  ...application,
+};
+
+// Preserve MBBS & PG certificates
+user.profile.education = {
+  ...user.profile.education,
+  mbbs: {
+    ...user.profile.education.mbbs,
+    ...education.mbbs,
+    certificate:
+      user.profile.education.mbbs?.certificate ||
+      education.mbbs?.certificate ||
+      null,
+  },
+  pg: {
+    ...user.profile.education.pg,
+    ...education.pg,
+    certificate:
+      user.profile.education.pg?.certificate ||
+      education.pg?.certificate ||
+      null,
+  },
+  others:
+    education.others ||
+    user.profile.education.others ||
+    [],
+};
+
+user.profile.documents = uploadedDocuments;
+user.profile.profileCompletedAt = new Date();
+user.profileCompleted = true;
 
     // --- PROGRESSION LOGIC ---
     user.progression = user.progression || {};
     user.progression.step1 = user.progression.step1 || {};
     user.progression.step1.papers = user.progression.step1.papers || {};
 
-    // Open Step1 papers if not passed yet
     if (!user.progression.step1.papers.paper1?.status || user.progression.step1.papers.paper1.status !== "passed") {
-      user.progression.step1.papers.paper1 = {
-        ...user.progression.step1.papers.paper1,
-        status: "open",
-      };
+      user.progression.step1.papers.paper1 = { ...user.progression.step1.papers.paper1, status: "open" };
     }
     if (!user.progression.step1.papers.paper2?.status || user.progression.step1.papers.paper2.status !== "passed") {
-      user.progression.step1.papers.paper2 = {
-        ...user.progression.step1.papers.paper2,
-        status: "open",
-      };
+      user.progression.step1.papers.paper2 = { ...user.progression.step1.papers.paper2, status: "open" };
     }
 
-    // Update Step1 overallStatus
     user.progression.step1.overallStatus = "open";
     user.progression.step1.completedDate = null;
     user.progression.step1.allPapersPassed = false;
 
-    // Initialize Step2 & Step3 if not present
     user.progression.step2 = user.progression.step2 || {};
     user.progression.step3 = user.progression.step3 || {};
-
-    // Set currentLevel to 1 (Step1 open)
     user.progression.currentLevel = 1;
 
     await user.save();
@@ -300,6 +352,7 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
+
 
 
 
@@ -442,6 +495,8 @@ export const adminMarkStepPassed = async (req, res) => {
       user.progression.step1.completedDate = now;
       user.progression.step1.overallStatus = status;
       user.progression.step1.allPapersPassed = true;
+      user.progression.step2.status = open;
+      
     }
 
     // Step 2
@@ -461,6 +516,7 @@ export const adminMarkStepPassed = async (req, res) => {
       user.progression.step2.completedDate = now;
       user.progression.step2.overallStatus = status;
       found = true;
+      user.progression.step3.status = open;
     }
 
     // Step 3
