@@ -155,12 +155,12 @@ export const register = async (req, res) => {
   try {
     const { name, aadhaarNumber, mobileNumber, email, password } = req.body;
 
-    // Validate required fields
+    // ✅ Validate required fields
     if (!name || !aadhaarNumber || !mobileNumber || !email || !password) {
       return res.status(400).json({ msg: "All fields are required" });
     }
 
-    // Validate email credentials
+    // ✅ Validate email credentials
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       console.error("❌ Missing email credentials in .env");
       return res
@@ -168,26 +168,26 @@ export const register = async (req, res) => {
         .json({ msg: "Email credentials not configured on server" });
     }
 
-    // Check if email already exists
+    // ✅ Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ msg: "Email already registered" });
     }
 
-    // Check if Aadhaar already exists
+    // ✅ Check if Aadhaar already exists
     const existingAadhaar = await User.findOne({ aadhaarNumber });
     if (existingAadhaar) {
       return res.status(400).json({ msg: "Aadhaar number already registered" });
     }
 
-    // Hash password
+    // ✅ Hash password
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Generate sequential register number
+    // ✅ Generate sequential register number
     const registerNo = await generateRegisterNo();
 
-    // Create new user
+    // ✅ Create new user
     const user = await User.create({
       name,
       aadhaarNumber,
@@ -223,18 +223,21 @@ export const register = async (req, res) => {
       `,
     };
 
-    // ✅ Send email with proper try/catch
-    try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log("📩 Email sent successfully:", info.response);
-    } catch (emailError) {
-      console.error("❌ Error sending email:", emailError);
-      // User registration still succeeds even if email fails
-    }
+    // ✅ Send email asynchronously (Render-safe)
+    Promise.race([
+      transporter.sendMail(mailOptions),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Email timeout")), 7000)
+      ),
+    ])
+      .then((info) => console.log("📩 Email sent successfully:", info.response))
+      .catch((emailError) =>
+        console.error("⚠️ Email failed or timed out:", emailError.message)
+      );
 
-    // ✅ Final Response
-    res.status(201).json({
-      messag: "User registered successfully (email sent if no error logged above)",
+    // ✅ Send response immediately (don’t wait for email)
+    return res.status(201).json({
+      msg: "User registered successfully (email sent if no error logged above)",
       token,
       userId: user._id,
       name: user.name,
@@ -246,7 +249,7 @@ export const register = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Registration error:", err);
-    res.status(500).json({ msg: "Server error", error: err.message });
+    return res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
 
@@ -524,123 +527,6 @@ export const markStepPassed = async (userId, step) => {
 
 
 
-// export const adminMarkStepPassed = async (req, res) => {
-//   try {
-//     const { userId, applicationId, status } = req.body;
-
-//     if (!userId) {
-//       return res.status(400).json({ msg: "userId is required" });
-//     }
-
-//     if (!applicationId) {
-//       return res.status(400).json({ msg: "applicationId is required" });
-//     }
-
-//     if (!status || !["passed", "failed", "absent"].includes(status)) {
-//       return res.status(400).json({ msg: "Status must be 'passed', 'failed' or 'absent'" });
-//     }
-
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ msg: "User not found" });
-
-//     // Find the exam registration by applicationNumber
-//     const aplDoc = await ExamRegistration.findOne({ applicationNumber: applicationId });
-//     if (!aplDoc) return res.status(404).json({ msg: "Application not found" });
-
-//     // Update ExamRegistration
-//     aplDoc.applicationInfo.applicationStatus = status;
-//     await aplDoc.save();
-
-//     const now = new Date();
-//     if (!user.progression) user.progression = {};
-
-//     let found = false;
-
-//     // Helper to update paper status
-//     const updatePaper = (paper = {}) => {
-//       if (paper.applicationId === applicationId) {
-//         found = true;
-//         return { ...paper, status, completedDate: now, applicationId: paper.applicationId };
-//       }
-//       return paper;
-//     };
-//     // Step 1
-//     if (!user.progression.step1) user.progression.step1 = {};
-//     if (!user.progression.step1.papers) user.progression.step1.papers = {};
-//     user.progression.step1.papers.paper1 = updatePaper(user.progression.step1.papers.paper1 || {});
-//     user.progression.step1.papers.paper2 = updatePaper(user.progression.step1.papers.paper2 || {});
-//     if (
-//       user.progression.step1.papers.paper1.status === status ||
-//       user.progression.step1.papers.paper2.status === status
-//     ) {
-//       user.progression.step1.status = status;
-//       user.progression.step1.completedDate = now;
-//       user.progression.step1.overallStatus = status;
-//       user.progression.step1.allPapersPassed = true;
-//       // user.progression.step2.status = open;
-      
-//     }
-
-//     // Step 2
-//     if (!user.progression.step2) user.progression.step2 = {};
-//     if (user.progression.step2.papers) {
-//       for (const key in user.progression.step2.papers) {
-//         user.progression.step2.papers[key] = updatePaper(user.progression.step2.papers[key]);
-//       }
-//       if (Object.values(user.progression.step2.papers).some(p => p.status === status)) {
-//         user.progression.step2.status = status;
-//         user.progression.step2.completedDate = now;
-//         user.progression.step2.overallStatus = status;
-//       }
-//     }
-//     if (user.progression.step2.applicationId === applicationId) {
-//       user.progression.step2.status = status;
-//       user.progression.step2.completedDate = now;
-//       user.progression.step2.overallStatus = status;
-//       found = true;
-//       // user.progression.step3.status = open;
-//     }
-
-//     // Step 3
-//     if (!user.progression.step3) user.progression.step3 = {};
-//     if (!user.progression.step3.partA) user.progression.step3.partA = {};
-//     if (!user.progression.step3.partB) user.progression.step3.partB = {};
-
-//     user.progression.step3.partA = updatePaper(user.progression.step3.partA);
-//     user.progression.step3.partB = updatePaper(user.progression.step3.partB);
-
-//     if (!found) {
-//       return res.status(404).json({ msg: "ApplicationId not exist in user progression" });
-//     }
-
-//     // Update currentLevel only if passed
-//     if (user.progression.step1.status === "passed") user.progression.currentLevel = 2;
-//     if (user.progression.step2.status === "passed") user.progression.currentLevel = 3;
-
-//     // Check if all steps completed (only for passed)
-//     const allStepsPassed =
-//       user.progression.step1?.status === "passed" &&
-//       user.progression.step2?.status === "passed" &&
-//       user.progression.step3.partA?.status === "passed" &&
-//       user.progression.step3.partB?.status === "passed";
-
-//     if (allStepsPassed) {
-//       user.progression.currentLevel = 4;
-//       user.progression.allStepsCompleted = true;
-//       user.progression.completionDate = now;
-//     }
-
-//     await user.save();
-
-//     res.status(200).json({
-//       msg: `Application ${applicationId} marked as ${status} successfully`,
-//       progression: user.progression,
-//     });
-//   } catch (err) {
-//     console.error("Admin mark step status error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
 export const adminMarkStepPassed = async (req, res) => {
   try {
     const { userId, applicationId, status } = req.body;
