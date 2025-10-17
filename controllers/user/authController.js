@@ -45,6 +45,112 @@ transporter.verify((error, success) => {
 });
 
 // ✅ Register new user
+
+
+
+
+// export const register = async (req, res) => {
+//   try {
+//     const { name, aadhaarNumber, mobileNumber, email, password } = req.body;
+
+//     // Validate required fields
+//     if (!name || !aadhaarNumber || !mobileNumber || !email || !password) {
+//       return res.status(400).json({ msg: "All fields are required" });
+//     }
+
+//     // Validate email credentials
+//     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+//       console.error("❌ Missing email credentials in .env");
+//       return res
+//         .status(500)
+//         .json({ msg: "Email credentials not configured on server" });
+//     }
+
+//     // Check if email already exists
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({ msg: "Email already registered" });
+//     }
+
+//     // Check if Aadhaar already exists
+//     const existingAadhaar = await User.findOne({ aadhaarNumber });
+//     if (existingAadhaar) {
+//       return res.status(400).json({ msg: "Aadhaar number already registered" });
+//     }
+
+//     // Hash password
+//     const salt = await bcrypt.genSalt(10);
+//     const passwordHash = await bcrypt.hash(password, salt);
+
+//     // Generate sequential register number
+//     const registerNo = await generateRegisterNo();
+
+//     // Create new user
+//     const user = await User.create({
+//       name,
+//       aadhaarNumber,
+//       mobileNumber,
+//       email,
+//       passwordHash,
+//       registerNo,
+//     });
+//     // After creating user
+//     const waMessage = `Hello ${user.name}, your registration is successful! Reg No: ${user.registerNo}`;
+//     await sendWhatsApp("918057509308", waMessage);
+//     // Generate JWT token
+//     const token = jwt.sign({ id: user._id }, JWT_SECRET, {
+//       expiresIn: JWT_EXPIRES,
+//     });
+
+//     // ✅ Prepare mail
+//     const mailOptions = {
+//       from: `"Cognoscente Invented Pvt. Ltd." <${process.env.EMAIL_USER}>`,
+//       to: user.email,
+//       subject: "Registration Successful ✅",
+//       html: `
+//         <h2>Welcome, ${user.name}!</h2>
+//         <p>You have successfully registered with <strong>Cognoscente Invented Pvt. Ltd.</strong>.</p>
+//         <h3>Your Details:</h3>
+//         <ul>
+//           <li><strong>Register No:</strong> ${user.registerNo}</li>
+//           <li><strong>Email:</strong> ${user.email}</li>
+//           <li><strong>Mobile:</strong> ${user.mobileNumber}</li>
+//           <li><strong>Aadhaar:</strong> ${user.aadhaarNumber}</li>
+//         </ul>
+//         <p>Thank you for registering. You can now log in using your credentials.</p>
+//         <br/>
+//         <p>Best regards,<br/>Cognoscente Invented Pvt. Ltd. Team</p>
+//       `,
+//     };
+
+//     // ✅ Send email with proper try/catch
+//     try {
+//       const info = await transporter.sendMail(mailOptions);
+//       console.log("📩 Email sent successfully:", info.response);
+//     } catch (emailError) {
+//       console.error("❌ Error sending email:", emailError);
+//       // User registration still succeeds even if email fails
+//     }
+
+//     // ✅ Final Response
+//     res.status(201).json({
+//       // msg: "User registered successfully (email sent if no error logged above)",
+//            messag: "User registered successfully (email sent if no error logged above)",
+//       token,
+//       userId: user._id,
+//       name: user.name,
+//       aadhaarNumber: user.aadhaarNumber,
+//       mobileNumber: user.mobileNumber,
+//       email: user.email,
+//       registerNo: user.registerNo,
+//       profile: user.profile,
+
+//     });
+//   } catch (err) {
+//     console.error("❌ Registration error:", err);
+//     res.status(500).json({ msg: "Server error", error: err.message });
+//   }
+// };
 export const register = async (req, res) => {
   try {
     const { name, aadhaarNumber, mobileNumber, email, password } = req.body;
@@ -90,10 +196,8 @@ export const register = async (req, res) => {
       passwordHash,
       registerNo,
     });
-    // After creating user
-    const waMessage = `Hello ${user.name}, your registration is successful! Reg No: ${user.registerNo}`;
-    await sendWhatsApp("918057509308", waMessage);
-    // Generate JWT token
+
+    // ✅ Generate JWT token
     const token = jwt.sign({ id: user._id }, JWT_SECRET, {
       expiresIn: JWT_EXPIRES,
     });
@@ -130,8 +234,7 @@ export const register = async (req, res) => {
 
     // ✅ Final Response
     res.status(201).json({
-      // msg: "User registered successfully (email sent if no error logged above)",
-           messag: "User registered successfully (email sent if no error logged above)",
+      messag: "User registered successfully (email sent if no error logged above)",
       token,
       userId: user._id,
       name: user.name,
@@ -140,7 +243,6 @@ export const register = async (req, res) => {
       email: user.email,
       registerNo: user.registerNo,
       profile: user.profile,
-
     });
   } catch (err) {
     console.error("❌ Registration error:", err);
