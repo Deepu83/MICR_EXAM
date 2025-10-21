@@ -194,6 +194,7 @@ export const register = async (req, res) => {
       mobileNumber,
       email,
       passwordHash,
+      
       registerNo,
     });
 
