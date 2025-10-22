@@ -119,7 +119,7 @@ const Step1Schema = new mongoose.Schema({
   },
   overallStatus: {
     type: String,
-    enum: ["open", "filled", "passed", "failed","absent","closed"],
+    enum: ["open", "filled", "passed", "failed","absent","closed","in-progress"],
     default: "closed",
   },
   applicationId: { type: String, default: null },
@@ -157,11 +157,24 @@ const Step3Schema = new mongoose.Schema({
   partB: { type: Step3PartSchema, default: () => ({}) },
 });
 
-// ✅ Main Progression Schema
+// // ✅ Main Progression Schema
+// const ProgressionSchema = new mongoose.Schema({
+//   currentLevel: {
+//     type: Number,
+//     enum: [0,1, 2, 3, 4,"1A","1B"], // 1: STEP-1 | 2: STEP-2 | 3: STEP-3A | 4: STEP-3B
+//     default: 0,
+//   },
+//   step1: { type: Step1Schema, default: () => ({}) },
+//   step2: { type: Step2Schema, default: () => ({}) },
+//   step3: { type: Step3Schema, default: () => ({}) },
+//   allStepsCompleted: { type: Boolean, default: false },
+//   completionDate: { type: Date, default: null },
+// });
+// ✅ Main Progression Schema (Fixed)
 const ProgressionSchema = new mongoose.Schema({
   currentLevel: {
-    type: Number,
-    enum: [0,1, 2, 3, 4], // 1: STEP-1 | 2: STEP-2 | 3: STEP-3A | 4: STEP-3B
+    type: mongoose.Schema.Types.Mixed, // allows both numbers and strings
+    enum: [0, 1, 2, 3, 4, "1A", "1B"], // 1A and 1B for partial Step 1 completion
     default: 0,
   },
   step1: { type: Step1Schema, default: () => ({}) },
