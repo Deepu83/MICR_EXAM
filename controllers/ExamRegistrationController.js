@@ -57,157 +57,7 @@ export const createOrder = async (req, res) => {
 
 
 
-// export const verifyPaymentAndRegister = async (req, res) => {
-//   try {
-//     const {
-//       userId,
-//       examId,
-//       examDate,
-//       paymentAmount,
-//       examCode,
-//       order_id,
-//       payment_id,
-//       signature,
-//       currency,
-//       country,
-//       remarks,
-//     } = req.body;
 
-
-//     //
-
-//     console.log("🟢 Payment Verification Request Received");
-//     console.log("Order ID:", order_id);
-//     console.log("Payment ID:", payment_id);
-//     console.log("Received Signature:", signature);
-
-
-//     if (!userId || !examId || !order_id || !payment_id || !signature) {
-//       return res.status(400).json({ msg: "Missing required fields" });
-//     }
-
-//     const generatedSignature = createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-//       .update(order_id + "|" + payment_id)
-//       .digest("hex");
-
-//     if (generatedSignature !== signature) {
-//       return res.status(400).json({ msg: "Payment verification failed" });
-//     }
-
-//     // ✅ Payment verified, create registration
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ msg: "User not found" });
-
-//     // Check if already registered
-//     let registration = await ExamRegistration.findOne({ userId, examId });
-//     if (registration) {
-//       return res.status(400).json({ msg: "User already registered for this exam" });
-//     }
-
-//     // Generate unique application number
-//     const currentYear = new Date().getFullYear();
-//     let applicationNumber;
-//     let applicationNumber2;
-//     let isUnique = false;
-
-//     while (!isUnique) {
-//       const randomDigits = Math.floor(100 + Math.random() * 900);
-//       applicationNumber = `EXAM${currentYear}-${randomDigits}`;
-//      applicationNumber2 = `EXAM${currentYear}-${randomDigits}`;
-//       const existing = await ExamRegistration.findOne({ applicationNumber });
-    
-//       if (!existing) isUnique = true;
-//     }
-    
-
-//     registration = new ExamRegistration({
-//       applicationNumber,
-//       userId: new mongoose.Types.ObjectId(userId),
-
-//       examId: examId, //
-//       applicationInfo: {
-//         examDate,
-//         paymentAmount,
-//         currency: currency || "INR",
-//         paymentMode: "Razorpay",
-//         transactionId: payment_id,
-//         country: country || "India",
-//         remarks: remarks || "",
-//         paymentStatus: "paid",
-//       },
-//     });
-
-//     await registration.save();
-
-//     // Update user progression
-//     console.log(examCode)
-//     user.progression = user.progression || {};
-//     switch (examCode) {
-//       case "1":
-//         user.progression.step1 = user.progression.step1 || {};
-//         user.progression.step1.papers = user.progression.step1.papers || {};
-//         user.progression.step1.papers.paper1 = user.progression.step1.papers.paper1 || {};
-//         user.progression.step1.papers.paper2 = user.progression.step1.papers.paper2 || {};
-//         user.progression.step1.papers.paper1.applicationId = registration.applicationNumber;
-//         user.progression.step1.papers.paper2.applicationId = registration.applicationNumber2;
-//         user.progression.step1.papers.paper1.status = "filled";
-//         user.progression.step1.papers.paper2.status = "filled";
-//         user.progression.step1.overallStatus = "filled";
-//         break;
-//         case "1A":
-//     user.progression.step1 = user.progression.step1 || {};
-//     user.progression.step1.papers = user.progression.step1.papers || {};
-
-//     // Update only paper1
-//     user.progression.step1.papers.paper1 = {
-//       paid: true,
-//       paymentId: payment_id,       // use the correct variable
-//       date: examDate,
-//       applicationId: registration.applicationNumber,
-//       status: "filled",
-//     };
-//     break;
-
-//   case "1B":
-//     user.progression.step1 = user.progression.step1 || {};
-//     user.progression.step1.papers = user.progression.step1.papers || {};
-
-//     // Update only paper2
-//     user.progression.step1.papers.paper2 = {
-//       paid: true,
-//       paymentId: payment_id,       // use the correct variable
-//       date: examDate,
-//       applicationId: registration.applicationNumber,
-//       status: "filled",
-//     };
-//     break;
-//       case "2":
-//         user.progression.step2 = user.progression.step2 || {};
-//         user.progression.step2.applicationId = registration.applicationNumber;
-//         user.progression.step2.status = "filled";
-//         break;
-//       case "3A":
-//         user.progression.step3 = user.progression.step3 || {};
-//         user.progression.step3.partA = user.progression.step3.partA || {};
-//         user.progression.step3.partA.applicationId = registration.applicationNumber;
-//         user.progression.step3.partA.status = "filled";
-//         break;
-//       case "3B":
-//         user.progression.step3 = user.progression.step3 || {};
-//         user.progression.step3.partB = user.progression.step3.partB || {};
-//         user.progression.step3.partB.applicationId = registration.applicationNumber;
-//         user.progression.step3.partB.status = "filled"
-//         break;
-//     }
-
-//     await user.save();
-
-//     res.status(200).json({ msg: "Payment verified and registration completed", registration });
-//   } catch (err) {
-//     console.error("Verification & registration error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
 
 export const verifyPaymentAndRegister = async (req, res) => {
   try {
@@ -372,6 +222,12 @@ export const verifyPaymentAndRegister = async (req, res) => {
             applicationId: appNum,
             status: "filled",
           };
+
+            if (user.progression.step3.partA && user.progression.step3.partB) {
+    const appNumOverall3 = await generateUniqueAppNumber();
+    user.progression.step3.applicationId = appNumOverall3;
+    user.progression.step3.overallStatus = "filled";
+  }
           break;
 
         case "1B":
@@ -384,6 +240,13 @@ export const verifyPaymentAndRegister = async (req, res) => {
             applicationId: appNum,
             status: "filled",
           };
+
+           // ✅ If both partA and partB exist, create overall Step 3 ID
+  if (user.progression.step3.partA && user.progression.step3.partB) {
+    const appNumOverall3 = await generateUniqueAppNumber();
+    user.progression.step3.applicationId = appNumOverall3;
+    user.progression.step3.overallStatus = "filled";
+  }
           break;
 
         case "2":
@@ -393,21 +256,51 @@ export const verifyPaymentAndRegister = async (req, res) => {
           };
           break;
 
-        case "3A":
-          user.progression.step3 = user.progression.step3 || {};
-          user.progression.step3.partA = {
-            applicationId: appNum,
-            status: "filled",
-          };
-          break;
+        // case "3A":
+        //   user.progression.step3 = user.progression.step3 || {};
+        //   user.progression.step3.partA = {
+        //     applicationId: appNum,
+        //     status: "filled",
+        //   };
+        //   break;
 
-        case "3B":
-          user.progression.step3 = user.progression.step3 || {};
-          user.progression.step3.partB = {
-            applicationId: appNum,
-            status: "filled",
-          };
-          break;
+        // case "3B":
+        //   user.progression.step3 = user.progression.step3 || {};
+        //   user.progression.step3.partB = {
+        //     applicationId: appNum,
+        //     status: "filled",
+        //   };
+        //   break;
+        case "3A":
+  user.progression.step3 = user.progression.step3 || {};
+  user.progression.step3.partA = {
+    applicationId: appNum,
+    status: "filled",
+  };
+
+  // ✅ If both partA and partB exist, create overall Step 3 ID
+  if (user.progression.step3.partA && user.progression.step3.partB) {
+    const appNumOverall3 = await generateUniqueAppNumber();
+    user.progression.step3.applicationId = appNumOverall3;
+    user.progression.step3.overallStatus = "filled";
+  }
+  break;
+
+case "3B":
+  user.progression.step3 = user.progression.step3 || {};
+  user.progression.step3.partB = {
+    applicationId: appNum,
+    status: "filled",
+  };
+
+  // ✅ If both partA and partB exist, create overall Step 3 ID
+  if (user.progression.step3.partA && user.progression.step3.partB) {
+    const appNumOverall3 = await generateUniqueAppNumber();
+    user.progression.step3.applicationId = appNumOverall3;
+    user.progression.step3.overallStatus = "filled";
+  }
+  break;
+
       }
     }
 
