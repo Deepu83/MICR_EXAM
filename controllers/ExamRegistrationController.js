@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import Razorpay from "razorpay";
 import { createHmac } from "crypto";
 
-
+// import User from "../models/User.js";
 
 
 
@@ -253,7 +253,7 @@ export const verifyPaymentAndRegister = async (req, res) => {
   if (user.progression.step3.partA && user.progression.step3.partB) {
     const appNumOverall3 = await generateUniqueAppNumber();
     user.progression.step3.applicationId = appNumOverall3;
-    user.progression.step3.overallStatus = "filled";
+    user.progression.step3.overallStatus = "submitted";
   }
           break;
 
@@ -290,7 +290,7 @@ export const verifyPaymentAndRegister = async (req, res) => {
   if (user.progression.step3.partA && user.progression.step3.partB) {
     const appNumOverall3 = await generateUniqueAppNumber();
     user.progression.step3.applicationId = appNumOverall3;
-    user.progression.step3.overallStatus = "filled";
+    user.progression.step3.overallStatus = "submitted";
   }
   break;
 
@@ -305,7 +305,7 @@ case "3B":
   if (user.progression.step3.partA && user.progression.step3.partB) {
     const appNumOverall3 = await generateUniqueAppNumber();
     user.progression.step3.applicationId = appNumOverall3;
-    user.progression.step3.overallStatus = "filled";
+    user.progression.step3.overallStatus = "submitted";
   }
   break;
 
@@ -562,6 +562,156 @@ export const getStepDetailsByApplicationId = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Server Error:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+
+//
+// controllers/admitCardController.js
+
+
+export const getAdmitCard = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { step, paper } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ msg: "Invalid userId" });
+    }
+
+    // ✅ Fetch user with full details
+    const user = await User.findById(userId)
+      .select(
+        "name gender email mobileNumber aadhaarNumber registerNo profile progression profileCompleted createdAt"
+      )
+      .lean();
+
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    // ✅ Clean the profile: keep only photo + basic info (no documents)
+    let cleanedProfile = {};
+    if (user.profile) {
+      const app = user.profile.application || {};
+      cleanedProfile = {
+        application: {
+          fullName: app.fullName || "",
+          fatherName: app.fatherName || "",
+          dob: app.dob || "",
+          gender: app.gender || "",
+          maritalStatus: app.maritalStatus || "",
+          nationality: app.nationality || "",
+          presentStatus: app.presentStatus || "",
+          councilName: app.councilName || "",
+          iriaMembershipNumber: app.iriaMembershipNumber || "",
+          registrationNumber: app.registrationNumber || "",
+          email: app.email || "",
+          contactNumber: app.contactNumber || "",
+          altNumber: app.altNumber || "",
+          centers: app.centers || {},
+          address: app.address || {},
+        },
+        // ✅ Only include profile photo if available
+        photo:
+          user.profile.documents?.photo?.url ||
+          app.documents?.photo?.url ||
+          null,
+        profileCompletedAt: user.profile.profileCompletedAt || null,
+        createdAt: user.profile.createdAt || null,
+        updatedAt: user.profile.updatedAt || null,
+      };
+    }
+
+    // ✅ Step → examCode mapping
+    const stepToExamCodes = {
+      "1": ["1", "1A", "1B"],
+      "2": ["2"],
+      "3": ["3A", "3B"],
+    };
+
+    let examCodeFilter = null;
+
+    if (step) {
+      const codes = stepToExamCodes[String(step)];
+      if (!codes) return res.status(400).json({ msg: "Invalid step (1,2,3 allowed)" });
+
+      if (String(step) === "1" && paper) {
+        if (String(paper) === "1") examCodeFilter = ["1A"];
+        else if (String(paper) === "2") examCodeFilter = ["1B"];
+        else return res.status(400).json({ msg: "Invalid paper (1 or 2 allowed)" });
+      } else {
+        examCodeFilter = codes;
+      }
+    }
+
+    // ✅ Fetch exam registrations
+    const query = { userId: new mongoose.Types.ObjectId(userId) };
+    if (examCodeFilter) query["examCode"] = { $in: examCodeFilter };
+
+    let registrations = await ExamRegistration.find(query)
+      .populate("examId", "examName examCode")
+      .lean();
+
+    // ✅ Filter by populated examCode if needed
+    if (examCodeFilter && registrations.length) {
+      registrations = registrations.filter((r) => {
+        const top = r.examCode;
+        const pop = r.examId?.examCode;
+        return (top && examCodeFilter.includes(top)) || (pop && examCodeFilter.includes(pop));
+      });
+    }
+
+    // ✅ Format admit card details
+    const admitCards = registrations.map((r) => {
+      const appInfo = r.applicationInfo || {};
+      const centers = r.centers || appInfo.centers || {};
+      const examName = r.examId?.examName || appInfo.examName;
+      const examCode = r.examId?.examCode || appInfo.examCode;
+
+      return {
+        registrationId: r._id,
+        applicationNumber: r.applicationNumber || null,
+        examName,
+        examCode,
+        examDate: appInfo.examDate || null,
+        reportingTime: appInfo.reportingTime || "08:30 AM",
+        gateClosingTime: appInfo.gateClosingTime || null,
+        examTimings: appInfo.timing || null,
+        centerName: centers.name || null,
+        venue: centers.venue || centers.address || null,
+        testCenterNumber: centers.testCenterNumber || null,
+        payment: {
+          amount: appInfo.paymentAmount || null,
+          currency: appInfo.currency || "INR",
+          paymentMode: appInfo.paymentMode || null,
+          transactionId: appInfo.transactionId || null,
+          paymentStatus: appInfo.paymentStatus || null,
+        },
+        remarks: appInfo.remarks || null,
+      };
+    });
+
+    // ✅ Final response
+    res.status(200).json({
+      msg: registrations.length
+        ? "Admit card data fetched successfully"
+        : "No registrations found for this user (matching filter if provided).",
+      user: {
+        _id: user._id,
+        name: user.name,
+        gender: user.gender,
+        aadhaarNumber: user.aadhaarNumber,
+        mobileNumber: user.mobileNumber,
+        email: user.email,
+        registerNo: user.registerNo,
+        profileCompleted: user.profileCompleted,
+        progression: user.progression || {},
+        profile: cleanedProfile, // ✅ cleaned profile (no documents)
+      },
+      admitCards,
+    });
+  } catch (err) {
+    console.error("getAdmitCard error:", err);
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
