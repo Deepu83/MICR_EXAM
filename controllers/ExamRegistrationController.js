@@ -177,11 +177,11 @@ export const verifyPaymentAndRegister = async (req, res) => {
       // Paper 1 and 2 data
       user.progression.step1.papers.paper1 = {
         applicationId: appNum1,
-        status: "filled",
+        status: "submitted",
       };
       user.progression.step1.papers.paper2 = {
         applicationId: appNum2,
-        status: "filled",
+        status: "submitted",
       };
 
       // ✅ Add overall Step 1 applicationId
