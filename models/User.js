@@ -100,7 +100,7 @@ const Step1Schema = new mongoose.Schema({
     paper1: {
       status: {
         type: String,
-        enum: ["open", "passed", "failed","absent","closed","filled"],
+        enum: ["open","submitted", "passed", "failed","absent","closed","filled"],
         default: "closed",
       },
       completedDate: { type: Date, default: null },
@@ -110,7 +110,7 @@ const Step1Schema = new mongoose.Schema({
     paper2: {
       status: {
         type: String,
-        enum: ["open", "filled", "passed", "failed","absent","closed"],
+        enum: ["open","submitted", "filled", "passed", "failed","absent","closed"],
         default: "closed",
       },
       completedDate: { type: Date, default: null },
@@ -119,7 +119,7 @@ const Step1Schema = new mongoose.Schema({
   },
   overallStatus: {
     type: String,
-    enum: ["open", "filled", "passed", "failed","absent","closed","in-progress"],
+    enum: ["open", "filled","submitted",  "passed", "failed","absent","closed","in-progress"],
     default: "closed",
   },
   applicationId: { type: String, default: null },
@@ -132,7 +132,7 @@ const Step1Schema = new mongoose.Schema({
 const Step2Schema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ["open", "filled", "passed", "failed","absent","closed"],
+    enum: ["open", "filled","submitted",  "passed", "failed","absent","closed"],
     default: "closed",
   },
   completedDate: { type: Date, default: null },
@@ -144,7 +144,7 @@ const Step2Schema = new mongoose.Schema({
 const Step3PartSchema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ["open", "filled", "passed", "failed","absent","closed"],
+    enum: ["open", "filled","submitted",  "passed", "failed","absent","closed"],
     default: "closed",
   },
   completedDate: { type: Date, default: null },
@@ -157,7 +157,7 @@ const Step3Schema = new mongoose.Schema({
   partB: { type: Step3PartSchema, default: () => ({}) },
     overallStatus: {
     type: String,
-    enum: ["open", "filled", "passed", "failed","absent","closed","in-progress"],
+    enum: ["open", "filled", "submitted", "passed", "failed","absent","closed","in-progress"],
     default: "closed",
   },
   applicationId: { type: String, default: null },

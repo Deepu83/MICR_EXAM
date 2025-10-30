@@ -73,6 +73,7 @@ export const verifyPaymentAndRegister = async (req, res) => {
       currency,
       country,
       remarks,
+      centers,
     } = req.body;
 
     console.log("🟢 Payment Verification Request Received");
@@ -110,7 +111,8 @@ export const verifyPaymentAndRegister = async (req, res) => {
       let appNum, isUnique = false;
       while (!isUnique) {
         const randomDigits = Math.floor(100 + Math.random() * 900);
-        appNum = `EXAM${currentYear}-${randomDigits}`;
+        // appNum = `EXAM${currentYear}-${randomDigits}`;
+         appNum = `EXAM${currentYear}0${randomDigits}`;
         const exists = await ExamRegistration.findOne({ applicationNumber: appNum });
         if (!exists) isUnique = true;
       }
@@ -158,6 +160,9 @@ export const verifyPaymentAndRegister = async (req, res) => {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
+
+        //add 
+                centers,
       });
 
       // Save both registrations
@@ -204,6 +209,9 @@ export const verifyPaymentAndRegister = async (req, res) => {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
+
+        //add 
+                centers,
       });
 
       await registration.save();
@@ -220,13 +228,13 @@ export const verifyPaymentAndRegister = async (req, res) => {
             paymentId: payment_id,
             date: examDate,
             applicationId: appNum,
-            status: "filled",
+            status: "submitted",
           };
 
             if (user.progression.step3.partA && user.progression.step3.partB) {
     const appNumOverall3 = await generateUniqueAppNumber();
     user.progression.step3.applicationId = appNumOverall3;
-    user.progression.step3.overallStatus = "filled";
+    user.progression.step3.overallStatus = "submitted";
   }
           break;
 
@@ -238,7 +246,7 @@ export const verifyPaymentAndRegister = async (req, res) => {
             paymentId: payment_id,
             date: examDate,
             applicationId: appNum,
-            status: "filled",
+            status: "submitted",
           };
 
            // ✅ If both partA and partB exist, create overall Step 3 ID
@@ -252,7 +260,7 @@ export const verifyPaymentAndRegister = async (req, res) => {
         case "2":
           user.progression.step2 = {
             applicationId: appNum,
-            status: "filled",
+            status: "submitted",
           };
           break;
 
@@ -275,7 +283,7 @@ export const verifyPaymentAndRegister = async (req, res) => {
   user.progression.step3 = user.progression.step3 || {};
   user.progression.step3.partA = {
     applicationId: appNum,
-    status: "filled",
+    status: "submitted",
   };
 
   // ✅ If both partA and partB exist, create overall Step 3 ID
@@ -290,7 +298,7 @@ case "3B":
   user.progression.step3 = user.progression.step3 || {};
   user.progression.step3.partB = {
     applicationId: appNum,
-    status: "filled",
+    status: "submitted",
   };
 
   // ✅ If both partA and partB exist, create overall Step 3 ID
