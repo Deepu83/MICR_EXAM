@@ -64,7 +64,16 @@ examId: {
       },
       remarks: { type: String, default: "" },
     },
+    //
+        centers: {
+      center1: { type: String },
+      center2: { type: String },
+    },
+    //
   },
+
+  //add center 
+  
   { timestamps: true } // automatically adds createdAt and updatedAt
 );
 
