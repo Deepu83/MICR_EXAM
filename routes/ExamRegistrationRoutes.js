@@ -21,7 +21,7 @@ router.post("/verify-payment", verifyPaymentAndRegister);
 router.get("/", getAllRegistrations);                // Get all registrations
 router.get("/:registrationId", getRegistrationById); // Get registration by ID
 router.put("/result/:registrationId", updateResult); // Update result
-router.get("/admit-card/:userId", getAdmitCard);
+router.get("/admit-card/:applicationId", getAdmitCard);
 router.get("/step/:applicationId", getStepDetailsByApplicationId);
 
 export default router;

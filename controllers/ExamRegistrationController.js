@@ -264,21 +264,7 @@ export const verifyPaymentAndRegister = async (req, res) => {
           };
           break;
 
-        // case "3A":
-        //   user.progression.step3 = user.progression.step3 || {};
-        //   user.progression.step3.partA = {
-        //     applicationId: appNum,
-        //     status: "filled",
-        //   };
-        //   break;
-
-        // case "3B":
-        //   user.progression.step3 = user.progression.step3 || {};
-        //   user.progression.step3.partB = {
-        //     applicationId: appNum,
-        //     status: "filled",
-        //   };
-        //   break;
+ 
         case "3A":
   user.progression.step3 = user.progression.step3 || {};
   user.progression.step3.partA = {
@@ -402,84 +388,6 @@ export const updateResult = async (req, res) => {
 };
 
 
-
-// // ✅ Get step details by applicationId
-// export const getStepDetailsByApplicationId = async (req, res) => {
-//   try {
-//     const { applicationId } = req.params;
-
-//     if (!applicationId) {
-//       return res.status(400).json({ msg: "Application ID is required" });
-//     }
-
-//     // ✅ Find the user whose progression contains this applicationId
-//     const user = await User.findOne({
-//       $or: [
-//         { "progression.step1.papers.paper1.applicationId": applicationId },
-//         { "progression.step1.papers.paper2.applicationId": applicationId },
-//         { "progression.step2.applicationId": applicationId },
-//         { "progression.step3.partA.applicationId": applicationId },
-//         { "progression.step3.partB.applicationId": applicationId },
-//       ],
-//     });
-
-//     if (!user) {
-//       return res.status(404).json({ msg: "No user found for this application ID" });
-//     }
-
-//     // ✅ Convert progression to plain object to avoid recursion issues
-//     const progression = user.progression.toObject ? user.progression.toObject() : user.progression;
-
-//     // ✅ Recursive search function
-//     const findStep = (obj) => {
-//       for (const key in obj) {
-//         if (obj.hasOwnProperty(key)) {
-//           const val = obj[key];
-//           if (val && typeof val === "object") {
-//             if (val.applicationId === applicationId) {
-//               return { stepName: key, stepDetails: val };
-//             }
-//             const result = findStep(val);
-//             if (result) return result;
-//           }
-//         }
-//       }
-//       return null;
-//     };
-
-//     const stepInfo = findStep(progression);
-
-//     if (!stepInfo) {
-//       return res.status(404).json({ msg: "Step not found for this application ID" });
-//     }
-
-//     let registration = null;
-
-//     // ✅ Only fetch registration if status is 'passed'
-//     if (stepInfo.stepDetails.status === "passed") {
-//       registration = await ExamRegistration.findOne({ applicationNumber: applicationId })
-//         .populate("examId", "examName examCode")
-//         .populate("userId", "name email")
-//         .lean();
-//     }
-
-//     res.status(200).json({
-//       msg: "Step details fetched successfully",
-//       stepName: stepInfo.stepName,
-//       user: { name: user.name, email: user.email },
-//       applicationId,
-//       stepDetails: {
-//         status: stepInfo.stepDetails.status || "not_started",
-//         completedDate: stepInfo.stepDetails.completedDate || null,
-//       },
-//       registration,
-//     });
-//   } catch (err) {
-//     console.error("❌ Server Error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
-// ✅ Get step details by applicationId
 export const getStepDetailsByApplicationId = async (req, res) => {
   try {
     const { applicationId } = req.params;
@@ -567,148 +475,109 @@ export const getStepDetailsByApplicationId = async (req, res) => {
 };
 
 
-//
-// controllers/admitCardController.js
-
-
 export const getAdmitCard = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const { step, paper } = req.query;
+    const { applicationId } = req.params; // e.g. EXAM20250178
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ msg: "Invalid userId" });
-    }
+    // ✅ Find exam registration by application number
+    const registration = await ExamRegistration.findOne({ applicationNumber: applicationId })
+      .populate("examId", "examName examCode")
+      .lean();
 
-    // ✅ Fetch user with full details
+    if (!registration)
+      return res.status(404).json({ msg: "Application not found" });
+
+    const userId = registration.userId;
+    if (!userId)
+      return res.status(404).json({ msg: "User not linked to this application" });
+
     const user = await User.findById(userId)
       .select(
-        "name gender email mobileNumber aadhaarNumber registerNo profile progression profileCompleted createdAt"
+        "name gender email mobileNumber aadhaarNumber registerNo profile progression profileCompleted"
       )
       .lean();
 
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    // ✅ Clean the profile: keep only photo + basic info (no documents)
-    let cleanedProfile = {};
-    if (user.profile) {
-      const app = user.profile.application || {};
-      cleanedProfile = {
-        application: {
-          fullName: app.fullName || "",
-          fatherName: app.fatherName || "",
-          dob: app.dob || "",
-          gender: app.gender || "",
-          maritalStatus: app.maritalStatus || "",
-          nationality: app.nationality || "",
-          presentStatus: app.presentStatus || "",
-          councilName: app.councilName || "",
-          iriaMembershipNumber: app.iriaMembershipNumber || "",
-          registrationNumber: app.registrationNumber || "",
-          email: app.email || "",
-          contactNumber: app.contactNumber || "",
-          altNumber: app.altNumber || "",
-          centers: app.centers || {},
-          address: app.address || {},
-        },
-        // ✅ Only include profile photo if available
-        photo:
-          user.profile.documents?.photo?.url ||
-          app.documents?.photo?.url ||
-          null,
-        profileCompletedAt: user.profile.profileCompletedAt || null,
-        createdAt: user.profile.createdAt || null,
-        updatedAt: user.profile.updatedAt || null,
-      };
-    }
+    // ✅ Filter progression to show only step matching applicationId
+    const prog = user.progression || {};
+    const filteredProgression = {};
 
-    // ✅ Step → examCode mapping
-    const stepToExamCodes = {
-      "1": ["1", "1A", "1B"],
-      "2": ["2"],
-      "3": ["3A", "3B"],
-    };
-
-    let examCodeFilter = null;
-
-    if (step) {
-      const codes = stepToExamCodes[String(step)];
-      if (!codes) return res.status(400).json({ msg: "Invalid step (1,2,3 allowed)" });
-
-      if (String(step) === "1" && paper) {
-        if (String(paper) === "1") examCodeFilter = ["1A"];
-        else if (String(paper) === "2") examCodeFilter = ["1B"];
-        else return res.status(400).json({ msg: "Invalid paper (1 or 2 allowed)" });
-      } else {
-        examCodeFilter = codes;
+    for (const [stepKey, stepValue] of Object.entries(prog)) {
+      if (
+        typeof stepValue === "object" &&
+        stepValue !== null &&
+        (stepValue.applicationId === applicationId ||
+          stepValue.papers?.paper1?.applicationId === applicationId ||
+          stepValue.papers?.paper2?.applicationId === applicationId ||
+          stepValue.partA?.applicationId === applicationId ||
+          stepValue.partB?.applicationId === applicationId)
+      ) {
+        filteredProgression[stepKey] = stepValue;
       }
     }
 
-    // ✅ Fetch exam registrations
-    const query = { userId: new mongoose.Types.ObjectId(userId) };
-    if (examCodeFilter) query["examCode"] = { $in: examCodeFilter };
+    // ✅ Profile data (without address)
+    const app = user.profile?.application || {};
+    const cleanedProfile = {
+      fullName: app.fullName || "",
+      // fatherName: app.fatherName || "",
+      dob: app.dob || "",
+      gender: app.gender || "",
+      maritalStatus: app.maritalStatus || "",
+      nationality: app.nationality || "",
+      presentStatus: app.presentStatus || "",
+      councilName: app.councilName || "",
+      // iriaMembershipNumber: app.iriaMembershipNumber || "",
+      registrationNumber: app.registrationNumber || "",
+      email: app.email || "",
+      contactNumber: app.contactNumber || "",
+      altNumber: app.altNumber || "",
 
-    let registrations = await ExamRegistration.find(query)
-      .populate("examId", "examName examCode")
-      .lean();
+    };
 
-    // ✅ Filter by populated examCode if needed
-    if (examCodeFilter && registrations.length) {
-      registrations = registrations.filter((r) => {
-        const top = r.examCode;
-        const pop = r.examId?.examCode;
-        return (top && examCodeFilter.includes(top)) || (pop && examCodeFilter.includes(pop));
-      });
-    }
+    // ✅ Admit card info
+    const appInfo = registration.applicationInfo || {};
+    const centers = registration.centers || appInfo.centers || {};
+    const examName = registration.examId?.examName || appInfo.examName;
+    const examCode = registration.examId?.examCode || appInfo.examCode;
 
-    // ✅ Format admit card details
-    const admitCards = registrations.map((r) => {
-      const appInfo = r.applicationInfo || {};
-      const centers = r.centers || appInfo.centers || {};
-      const examName = r.examId?.examName || appInfo.examName;
-      const examCode = r.examId?.examCode || appInfo.examCode;
+    // ✅ Combine all details into a single admitCard object
+    const admitCard = {
+      // registrationId: registration._id,
+      applicationNumber: registration.applicationNumber || null,
+      examName,
+      examCode,
+      examDate: appInfo.examDate || null,
+      reportingTime: appInfo.reportingTime || "08:30 AM",
+      gateClosingTime: appInfo.gateClosingTime || null,
+      examTimings: appInfo.timing || null,
+      centerName: [centers.center1, centers.center2].filter(Boolean),//pass
+      venue: centers.venue || centers.address || null,
+      testCenterNumber: centers.testCenterNumber || null,
+      remarks: appInfo.remarks || null,
 
-      return {
-        registrationId: r._id,
-        applicationNumber: r.applicationNumber || null,
-        examName,
-        examCode,
-        examDate: appInfo.examDate || null,
-        reportingTime: appInfo.reportingTime || "08:30 AM",
-        gateClosingTime: appInfo.gateClosingTime || null,
-        examTimings: appInfo.timing || null,
-        centerName: centers.name || null,
-        venue: centers.venue || centers.address || null,
-        testCenterNumber: centers.testCenterNumber || null,
-        payment: {
-          amount: appInfo.paymentAmount || null,
-          currency: appInfo.currency || "INR",
-          paymentMode: appInfo.paymentMode || null,
-          transactionId: appInfo.transactionId || null,
-          paymentStatus: appInfo.paymentStatus || null,
-        },
-        remarks: appInfo.remarks || null,
-      };
-    });
+      // ✅ Include user details inside admit card
+      userId: user._id,
+      name: user.name,
+      // aadhaarNumber: user.aadhaarNumber,
+      mobileNumber: user.mobileNumber,
+      email: user.email,
+      registerNo: user.registerNo,
+      profileCompleted: user.profileCompleted,
+      progression: filteredProgression,
+      photo:
+        user.profile?.documents?.photo?.url ||
+        app.documents?.photo?.url ||
+        user.profile?.photo ||
+        null,
+      profile: cleanedProfile,
+    };
 
     // ✅ Final response
     res.status(200).json({
-      msg: registrations.length
-        ? "Admit card data fetched successfully"
-        : "No registrations found for this user (matching filter if provided).",
-      user: {
-        _id: user._id,
-        name: user.name,
-        gender: user.gender,
-        aadhaarNumber: user.aadhaarNumber,
-        mobileNumber: user.mobileNumber,
-        email: user.email,
-        registerNo: user.registerNo,
-        profileCompleted: user.profileCompleted,
-        progression: user.progression || {},
-        profile: cleanedProfile, // ✅ cleaned profile (no documents)
-      },
-      admitCards,
+      msg: "Admit card data fetched successfully",
+      admitCard,
     });
   } catch (err) {
     console.error("getAdmitCard error:", err);

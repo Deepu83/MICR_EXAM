@@ -1,10 +1,4 @@
 
-// import User from "../../models/User.js";
-// import bcrypt from "bcrypt";
-// import jwt from "jsonwebtoken";
-// import fs from "fs";
-// import path from "path";
-// import { generateRegisterNo } from "../../utils/generateRegisterNo.js";
 import cloudinary from "../../config/cloudinary.js";
 import fs from "fs";
 import path from "path";
@@ -49,108 +43,6 @@ transporter.verify((error, success) => {
 
 
 
-// export const register = async (req, res) => {
-//   try {
-//     const { name, aadhaarNumber, mobileNumber, email, password } = req.body;
-
-//     // Validate required fields
-//     if (!name || !aadhaarNumber || !mobileNumber || !email || !password) {
-//       return res.status(400).json({ msg: "All fields are required" });
-//     }
-
-//     // Validate email credentials
-//     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-//       console.error("❌ Missing email credentials in .env");
-//       return res
-//         .status(500)
-//         .json({ msg: "Email credentials not configured on server" });
-//     }
-
-//     // Check if email already exists
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser) {
-//       return res.status(400).json({ msg: "Email already registered" });
-//     }
-
-//     // Check if Aadhaar already exists
-//     const existingAadhaar = await User.findOne({ aadhaarNumber });
-//     if (existingAadhaar) {
-//       return res.status(400).json({ msg: "Aadhaar number already registered" });
-//     }
-
-//     // Hash password
-//     const salt = await bcrypt.genSalt(10);
-//     const passwordHash = await bcrypt.hash(password, salt);
-
-//     // Generate sequential register number
-//     const registerNo = await generateRegisterNo();
-
-//     // Create new user
-//     const user = await User.create({
-//       name,
-//       aadhaarNumber,
-//       mobileNumber,
-//       email,
-//       passwordHash,
-//       registerNo,
-//     });
-//     // After creating user
-//     const waMessage = `Hello ${user.name}, your registration is successful! Reg No: ${user.registerNo}`;
-//     await sendWhatsApp("918057509308", waMessage);
-//     // Generate JWT token
-//     const token = jwt.sign({ id: user._id }, JWT_SECRET, {
-//       expiresIn: JWT_EXPIRES,
-//     });
-
-//     // ✅ Prepare mail
-//     const mailOptions = {
-//       from: `"Cognoscente Invented Pvt. Ltd." <${process.env.EMAIL_USER}>`,
-//       to: user.email,
-//       subject: "Registration Successful ✅",
-//       html: `
-//         <h2>Welcome, ${user.name}!</h2>
-//         <p>You have successfully registered with <strong>Cognoscente Invented Pvt. Ltd.</strong>.</p>
-//         <h3>Your Details:</h3>
-//         <ul>
-//           <li><strong>Register No:</strong> ${user.registerNo}</li>
-//           <li><strong>Email:</strong> ${user.email}</li>
-//           <li><strong>Mobile:</strong> ${user.mobileNumber}</li>
-//           <li><strong>Aadhaar:</strong> ${user.aadhaarNumber}</li>
-//         </ul>
-//         <p>Thank you for registering. You can now log in using your credentials.</p>
-//         <br/>
-//         <p>Best regards,<br/>Cognoscente Invented Pvt. Ltd. Team</p>
-//       `,
-//     };
-
-//     // ✅ Send email with proper try/catch
-//     try {
-//       const info = await transporter.sendMail(mailOptions);
-//       console.log("📩 Email sent successfully:", info.response);
-//     } catch (emailError) {
-//       console.error("❌ Error sending email:", emailError);
-//       // User registration still succeeds even if email fails
-//     }
-
-//     // ✅ Final Response
-//     res.status(201).json({
-//       // msg: "User registered successfully (email sent if no error logged above)",
-//            messag: "User registered successfully (email sent if no error logged above)",
-//       token,
-//       userId: user._id,
-//       name: user.name,
-//       aadhaarNumber: user.aadhaarNumber,
-//       mobileNumber: user.mobileNumber,
-//       email: user.email,
-//       registerNo: user.registerNo,
-//       profile: user.profile,
-
-//     });
-//   } catch (err) {
-//     console.error("❌ Registration error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
 
 export const register = async (req, res) => {
   try {
@@ -290,12 +182,72 @@ export const login = async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 };
+//otp 
+// ✅ Send OTP for profile update
+export const sendProfileUpdateOTP = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    //varify otp 
+    
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    // Generate random 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // Save OTP and expiry (5 min)
+    user.otp = otp;
+    user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
+    await user.save();
+
+    // Prepare email
+    const mailOptions = {
+      from: `"Cognoscente Invented Pvt. Ltd." <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: "OTP Verification for Profile Update 🔐",
+      html: `
+        <p>Dear ${user.name},</p>
+        <p>Your One-Time Password (OTP) for updating your profile is:</p>
+        <h2>${otp}</h2>
+        <p>This OTP is valid for 5 minutes.</p>
+        <p>Best regards,<br/>Cognoscente Invented Pvt. Ltd. Team</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ msg: "OTP sent to your email" });
+  } catch (err) {
+    console.error("OTP send error:", err);
+    res.status(500).json({ msg: "Failed to send OTP", error: err.message });
+  }
+};
 
 
 
 export const updateProfile = async (req, res) => {
   try {
     const { userId } = req.params;
+      const { otp } = req.body;
+
+    // ✅ Step 1: Verify OTP before allowing update
+    if (!otp) return res.status(400).json({ msg: "OTP is required" });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    if (!user.otp || user.otpExpires < Date.now()) {
+      return res.status(400).json({ msg: "OTP expired or invalid" });
+    }
+
+    if (user.otp !== parseInt(otp)) {
+      return res.status(400).json({ msg: "Invalid OTP" });
+    }
+
+    // ✅ OTP verified → clear it so it can’t be reused
+    user.otp = null;
+    user.otpExpires = null;
+
+    //otp
     console.log("🟡 Raw request body:", req.body);
 
     // Parse JSON fields
@@ -310,7 +262,7 @@ export const updateProfile = async (req, res) => {
         : req.body.education
       : {};
 
-    const user = await User.findById(userId);
+    // const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
     // Ensure profile exists
@@ -698,6 +650,114 @@ export const adminMarkStepPassed = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Admin mark step status error:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+
+//edit api
+// User requests edit - stored for admin approval
+export const requestProfileEdit = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updates = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    if (user.editApprovalStatus === "pending") {
+      return res.status(400).json({ msg: "Edit already pending approval" });
+    }
+
+    // 🟢 If there are uploaded files, add file info to updates
+    if (req.files) {
+      updates.documents = updates.documents || {};
+
+      for (const field in req.files) {
+        const file = req.files[field][0];
+        updates.documents[field] = {
+          name: file.originalname,
+          type: file.mimetype,
+          size: file.size,
+          url: `/uploads/tmp/${file.filename}`, // or move to permanent location
+          lastModified: new Date(),
+        };
+      }
+    }
+
+    // Store pending update
+    user.pendingProfileUpdate = updates;
+    user.editApprovalStatus = "pending";
+    await user.save();
+
+    res.status(200).json({
+      msg: "Profile edit request submitted. Waiting for admin approval.",
+      pendingData: user.pendingProfileUpdate,
+    });
+  } catch (err) {
+    console.error("Edit request error:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+export const approveProfileEdit = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { action } = req.body; // "approve" or "reject"
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    if (user.editApprovalStatus !== "pending") {
+      return res.status(400).json({ msg: "No pending edits to approve" });
+    }
+
+    if (action === "approve") {
+      // Replace current profile with pending one
+      user.profile = {
+        ...user.profile,
+        ...user.pendingProfileUpdate,
+      };
+      user.editApprovalStatus = "approved";
+      user.pendingProfileUpdate = null;
+    } else if (action === "reject") {
+      user.editApprovalStatus = "rejected";
+      user.pendingProfileUpdate = null;
+    } else {
+      return res.status(400).json({ msg: "Invalid action" });
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      msg: `Profile edit ${action}ed successfully`,
+      profile: user.profile,
+    });
+  } catch (err) {
+    console.error("Approval error:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+
+// Get all users who requested or have approved edits
+export const getEditRequests = async (req, res) => {
+  try {
+    const users = await User.find({
+      editApprovalStatus: { $in: ["pending", "approved"] },
+    }).select("name email editApprovalStatus pendingProfileUpdate");
+
+    if (users.length === 0) {
+      return res.status(404).json({ msg: "No users found with edit requests or approvals" });
+    }
+
+    res.status(200).json({
+      msg: "Fetched users with pending or approved edits",
+      count: users.length,
+      users,
+    });
+  } catch (err) {
+    console.error("Fetch edit requests error:", err);
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
