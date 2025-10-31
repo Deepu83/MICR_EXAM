@@ -3,22 +3,14 @@ import express from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { register, login, updateProfile,getAllUsers, getUserById , adminMarkStepPassed} from "../../controllers/user/authController.js";
+import {
+  register, login, updateProfile, getAllUsers, getUserById, adminMarkStepPassed, requestProfileEdit,
+  approveProfileEdit,sendProfileUpdateOTP,getEditRequests,
+} from "../../controllers/user/authController.js";
 
 const router = express.Router();
 
-// // ---------------- Multer Setup ----------------
-// const tmpDir = path.join(process.cwd(), "tmp");
-// if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
 
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => cb(null, tmpDir),
-//   filename: (req, file, cb) => {
-//     const safeName = file.originalname.replace(/\s+/g, "_"); // remove spaces
-//     cb(null, `${Date.now()}-${safeName}`);
-//   },
-// });
-// Use current working directory for ES modules (__dirname alternative)
 const tmpDir = path.join(process.cwd(), "tmp");
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
@@ -51,17 +43,43 @@ router.put(
     { name: "id_proof", maxCount: 1 },
     { name: "education", maxCount: 1 },
     { name: "address", maxCount: 1 },
-      { name: "registrationCertificate", maxCount: 1 }, // NEW
+    { name: "registrationCertificate", maxCount: 1 }, // NEW
     { name: "mbbsCertificate", maxCount: 1 }, // NEW
     { name: "pgCertificate", maxCount: 1 }, // NEW
   ]),
   updateProfile
 );
+
+//
+// 🟡 NEW: Request to edit profile (with file uploads, pending admin approval)
+router.put(
+  "/request-edit/:userId",
+  upload.fields([
+    { name: "photo", maxCount: 1 },
+    { name: "signature", maxCount: 1 },
+    { name: "id_proof", maxCount: 1 },
+    { name: "education", maxCount: 1 },
+    { name: "address", maxCount: 1 },
+    { name: "registrationCertificate", maxCount: 1 },
+    { name: "mbbsCertificate", maxCount: 1 },
+    { name: "pgCertificate", maxCount: 1 },
+  ]),
+  requestProfileEdit
+);
+
+
+// 🟢 NEW: Admin approves/rejects edit request
+router.put("/approve-edit/:userId", approveProfileEdit);
+
 // ---------------- GET all users ----------------
 router.get("/users", getAllUsers);
+router.get("/edit/requests", getEditRequests); // 👈 New route
 router.get("/users/:userId", getUserById);
 
 router.put("/users/progression", adminMarkStepPassed);
+
+//otp
+router.post("/send-otp/:userId", sendProfileUpdateOTP);
 
 // export default router;
 export default router;

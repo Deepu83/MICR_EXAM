@@ -213,6 +213,22 @@ const UserSchema = new mongoose.Schema({
     unique: true,
     uppercase: true,
   },
+  //
+  pendingProfileUpdate: {
+  type: Object,
+  default: null,
+},
+editApprovalStatus: {
+  type: String,
+  enum: ["none", "pending", "approved", "rejected"],
+  default: "none",
+},
+
+
+//
+otp: { type: Number },
+otpExpires: { type: Date },
+
   profileCompleted: { type: Boolean, default: false },
   progression: { type: ProgressionSchema, default: () => ({}) }, 
   createdAt: { type: Date, default: Date.now },
