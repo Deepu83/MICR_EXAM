@@ -479,23 +479,21 @@ export const getAdmitCard = async (req, res) => {
     const { applicationId } = req.params; // e.g. "EXAM20250178"
     console.log("🔹 Searching for application:", applicationId);
 
-    // ✅ Check if it's a valid ObjectId; if not, we skip _id-based queries
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(applicationId);
 
-    // ✅ Always search using applicationNumber (string)
-    const registration = await ExamRegistration.findOne({
+    // ✅ Use let so we can reassign later if needed
+    let registration = await ExamRegistration.findOne({
       applicationNumber: applicationId,
     })
       .populate("examId", "examName examCode")
       .lean();
 
-    // ✅ If not found by applicationNumber, only then try by _id (if valid)
+    // ✅ Only try _id lookup if not found and valid ObjectId
     if (!registration && isObjectId) {
       console.log("⚠️ Not found by applicationNumber, trying _id...");
-      const regById = await ExamRegistration.findById(applicationId)
+      registration = await ExamRegistration.findById(applicationId)
         .populate("examId", "examName examCode")
         .lean();
-      if (regById) registration = regById;
     }
 
     if (!registration) {
