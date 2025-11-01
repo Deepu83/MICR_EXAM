@@ -585,62 +585,125 @@ export const adminMarkStepPassed = async (req, res) => {
     }
 
     // ---------- STEP 2 ----------
-    if (user.progression.step2.applicationId === applicationId) {
-      found = true;
-      step2.status = status;
-      step2.overallStatus = status;
-      step2.completedDate = now;
+    // if (user.progression.step2.applicationId === applicationId) {
+    //   found = true;
+    //   step2.status = status;
+    //   step2.overallStatus = status;
+    //   step2.completedDate = now;
 
-      if (status === "passed") {
-        step3.partA = { status: "open" };
-        step3.partB = { status: "open" };
-        user.progression.currentLevel = 3;
-      } else {
-        step3.partA = { status: "closed" };
-        step3.partB = { status: "closed" };
-      }
+    //   if (status === "passed") {
+    //     step3.partA = { status: "open" };
+    //     step3.partB = { status: "open" };
+    //     user.progression.currentLevel = 3;
+    //   } else {
+    //     step3.partA = { status: "closed" };
+    //     step3.partB = { status: "closed" };
+    //   }
+    // }
+
+    // // ---------- STEP 3 ----------
+    // // ✅ If overall Step 3 application ID is used
+    // if (isOverallStep3) {
+    //   found = true;
+
+    //   for (const part of ["partA", "partB"]) {
+    //     if (!step3[part]) step3[part] = {};
+    //     step3[part].status = status;
+    //     step3[part].completedDate = now;
+
+    //     if (step3[part].applicationId) {
+    //       await ExamRegistration.updateOne(
+    //         { applicationNumber: step3[part].applicationId },
+    //         { $set: { "applicationInfo.applicationStatus": status } }
+    //       );
+    //     }
+    //   }
+
+    //   step3.overallStatus = status;
+    //   step3.completedDate = now;
+    // } else {
+    //   step3.partA = updatePaper(step3.partA);
+    //   step3.partB = updatePaper(step3.partB);
+    // }
+
+    // // ---------- FINAL COMPLETION ----------
+    // const allStepsPassed =
+    //   step1.overallStatus === "passed" &&
+    //   step2.status === "passed" &&
+    //   step3.partA?.status === "passed" &&
+    //   step3.partB?.status === "passed";
+
+    // if (allStepsPassed) {
+    //   user.progression.currentLevel = 4;
+    //   user.progression.allStepsCompleted = true;
+    //   user.progression.completionDate = now;
+    // } else {
+    //   user.progression.allStepsCompleted = false;
+    //   user.progression.completionDate = null;
+    // }
+    // ---------- STEP 2 ----------
+if (user.progression.step2.applicationId === applicationId) {
+  found = true;
+  step2.status = status;
+  step2.overallStatus = status;
+  step2.completedDate = now;
+
+  if (status === "passed") {
+    // open step 3 only once
+    if (!step3.partA?.status && !step3.partB?.status) {
+      step3.partA = { status: "open" };
+      step3.partB = { status: "open" };
     }
+    user.progression.currentLevel = 3;
+  } else {
+    step3.partA = { status: "closed" };
+    step3.partB = { status: "closed" };
+  }
+}
 
-    // ---------- STEP 3 ----------
-    // ✅ If overall Step 3 application ID is used
-    if (isOverallStep3) {
-      found = true;
+// ---------- STEP 3 ----------
+if (isOverallStep3) {
+  found = true;
 
-      for (const part of ["partA", "partB"]) {
-        if (!step3[part]) step3[part] = {};
-        step3[part].status = status;
-        step3[part].completedDate = now;
+  for (const part of ["partA", "partB"]) {
+    if (!step3[part]) step3[part] = {};
+    step3[part].status = status;
+    step3[part].completedDate = now;
 
-        if (step3[part].applicationId) {
-          await ExamRegistration.updateOne(
-            { applicationNumber: step3[part].applicationId },
-            { $set: { "applicationInfo.applicationStatus": status } }
-          );
-        }
-      }
-
-      step3.overallStatus = status;
-      step3.completedDate = now;
-    } else {
-      step3.partA = updatePaper(step3.partA);
-      step3.partB = updatePaper(step3.partB);
+    if (step3[part].applicationId) {
+      await ExamRegistration.updateOne(
+        { applicationNumber: step3[part].applicationId },
+        { $set: { "applicationInfo.applicationStatus": status } }
+      );
     }
+  }
 
-    // ---------- FINAL COMPLETION ----------
-    const allStepsPassed =
-      step1.overallStatus === "passed" &&
-      step2.status === "passed" &&
-      step3.partA?.status === "passed" &&
-      step3.partB?.status === "passed";
+  step3.overallStatus = status;
+  step3.completedDate = now;
+} else {
+  step3.partA = updatePaper(step3.partA);
+  step3.partB = updatePaper(step3.partB);
+}
+// ---------- FINAL COMPLETION ----------
+const step1Passed = step1.overallStatus === "passed";
+const step2Passed = step2.status === "passed";
+const partAPassed = step3.partA?.status === "passed";
+const partBPassed = step3.partB?.status === "passed";
+const step3Passed =
+  step3.overallStatus === "passed" ||
+  (partAPassed && partBPassed);
 
-    if (allStepsPassed) {
-      user.progression.currentLevel = 4;
-      user.progression.allStepsCompleted = true;
-      user.progression.completionDate = now;
-    } else {
-      user.progression.allStepsCompleted = false;
-      user.progression.completionDate = null;
-    }
+const allStepsPassed = step1Passed && step2Passed && step3Passed;
+
+if (allStepsPassed) {
+  user.progression.currentLevel = 4;
+  user.progression.allStepsCompleted = true;
+  user.progression.completionDate = now;
+} else {
+  user.progression.allStepsCompleted = false;
+  user.progression.completionDate = null;
+}
+
 
     await user.save();
 
