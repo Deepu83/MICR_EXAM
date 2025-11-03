@@ -21,13 +21,21 @@ const JWT_SECRET =
 const JWT_EXPIRES = "1d";
 
 // ✅ Configure Nodemailer transporter using Gmail
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS,
+//   },
+// });
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: "kandpaldeepak253@gmail.com",
+    pass: "ytpl sqpy fokh ldck", // your Gmail App Password
   },
 });
+
 
 // ✅ Verify transporter once when the server starts
 transporter.verify((error, success) => {
@@ -184,6 +192,52 @@ export const login = async (req, res) => {
 };
 //otp 
 // ✅ Send OTP for profile update
+// export const sendProfileUpdateOTP = async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+
+//     // ✅ Validate user
+//     const user = await User.findById(userId);
+//     if (!user) return res.status(404).json({ msg: "User not found" });
+
+//     // ✅ Generate random 6-digit OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000);
+
+//     // ✅ Save OTP and expiry (5 min)
+//     user.otp = otp;
+//     user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
+//     await user.save();
+
+//     // ✅ Respond immediately (don’t wait for email)
+//     res.status(200).json({ msg: "OTP generated successfully" });
+
+//     // ✅ Send email asynchronously (non-blocking)
+//     const mailOptions = {
+//       from: `"Cognoscente Invented Pvt. Ltd." <${process.env.EMAIL_USER}>`,
+//       to: user.email,
+//       subject: "OTP Verification for Profile Update 🔐",
+//       html: `
+//         <p>Dear ${user.name},</p>
+//         <p>Your One-Time Password (OTP) for updating your profile is:</p>
+//         <h2>${otp}</h2>
+//         <p>This OTP is valid for 5 minutes.</p>
+//         <p>Best regards,<br/>Cognoscente Invented Pvt. Ltd. Team</p>
+//       `,
+//     };
+
+//     transporter.sendMail(mailOptions).catch(err => {
+//       console.error("Background email send failed:", err);
+//     });
+//   } catch (err) {
+//     console.error("OTP send error:", err);
+//     res.status(500).json({ msg: "Failed to generate OTP", error: err.message });
+//   }
+// };
+
+
+
+// Create transporter directly (no env vars)
+
 export const sendProfileUpdateOTP = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -200,12 +254,12 @@ export const sendProfileUpdateOTP = async (req, res) => {
     user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
     await user.save();
 
-    // ✅ Respond immediately (don’t wait for email)
+    // ✅ Respond immediately
     res.status(200).json({ msg: "OTP generated successfully" });
 
-    // ✅ Send email asynchronously (non-blocking)
+    // ✅ Send email in background
     const mailOptions = {
-      from: `"Cognoscente Invented Pvt. Ltd." <${process.env.EMAIL_USER}>`,
+      from: `"Cognoscente Invented Pvt. Ltd." <kandpaldeepak253@gmail.com>`,
       to: user.email,
       subject: "OTP Verification for Profile Update 🔐",
       html: `
@@ -217,53 +271,14 @@ export const sendProfileUpdateOTP = async (req, res) => {
       `,
     };
 
-    transporter.sendMail(mailOptions).catch(err => {
-      console.error("Background email send failed:", err);
-    });
+    transporter.sendMail(mailOptions)
+      .then(() => console.log("✅ OTP email sent to", user.email))
+      .catch(err => console.error("❌ Email send error:", err));
   } catch (err) {
     console.error("OTP send error:", err);
     res.status(500).json({ msg: "Failed to generate OTP", error: err.message });
   }
 };
-
-// export const sendProfileUpdateOTP = async (req, res) => {
-//   try {
-//     const { userId } = req.params;
-//     //varify otp 
-    
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ msg: "User not found" });
-
-//     // Generate random 6-digit OTP
-//     const otp = Math.floor(100000 + Math.random() * 900000);
-
-//     // Save OTP and expiry (5 min)
-//     user.otp = otp;
-//     user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
-//     await user.save();
-
-//     // Prepare email
-//     const mailOptions = {
-//       from: `"Cognoscente Invented Pvt. Ltd." <${process.env.EMAIL_USER}>`,
-//       to: user.email,
-//       subject: "OTP Verification for Profile Update 🔐",
-//       html: `
-//         <p>Dear ${user.name},</p>
-//         <p>Your One-Time Password (OTP) for updating your profile is:</p>
-//         <h2>${otp}</h2>
-//         <p>This OTP is valid for 5 minutes.</p>
-//         <p>Best regards,<br/>Cognoscente Invented Pvt. Ltd. Team</p>
-//       `,
-//     };
-
-//     await transporter.sendMail(mailOptions);
-//     res.status(200).json({ msg: "OTP sent to your email" });
-//   } catch (err) {
-//     console.error("OTP send error:", err);
-//     res.status(500).json({ msg: "Failed to send OTP", error: err.message });
-//   }
-// };
-
 
 
 export const updateProfile = async (req, res) => {
