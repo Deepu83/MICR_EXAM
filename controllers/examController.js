@@ -1,96 +1,62 @@
 import Exam from "../models/Exam.js";
 
-// Create a new exam
+// Create new exam
 export const createExam = async (req, res) => {
   try {
-    const {
-      examName,
-      examSubject,
-      examDate,
-      registrationStartDate,
-      registrationEndDate,
-      disclaimer,
-      registrationAmount,
-      candidateDeclaration,
-      examStep,
-    } = req.body;
-
-    // Manual validation (extra safety before mongoose validation)
-    if (!examName || !examSubject || !examDate || !registrationStartDate || !registrationEndDate || !registrationAmount || !candidateDeclaration || !examStep) {
-      return res.status(400).json({
-        success: false,
-        message: "All required fields must be provided",
-      });
-    }
-
-    // Create new exam
-    const exam = new Exam({
-      examName,
-      examSubject,
-      examDate,
-      registrationStartDate,
-      registrationEndDate,
-      disclaimer,
-      registrationAmount,
-      candidateDeclaration,
-      examStep, // must be "1", "2", "3A", or "3B"
-    });
-
+    const exam = new Exam(req.body);
     await exam.save();
-
-    res.status(201).json({
-      success: true,
-      message: "✅ Exam created successfully",
-      exam,
-    });
+    res.status(201).json({ message: "Exam created successfully", exam });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: "❌ Failed to create exam",
-      error: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Get all exams
-export const getExams = async (req, res) => {
+export const getAllExams = async (req, res) => {
   try {
     const exams = await Exam.find();
-    res.status(200).json({ success: true, exams });
+    res.status(200).json(exams);
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to fetch exams", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Get single exam by ID
-export const getExamById = async (req, res) => {
+// Get exam by code
+export const getExamByCode = async (req, res) => {
   try {
-    const exam = await Exam.findById(req.params.id);
-    if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
-    res.status(200).json({ success: true, exam });
+    const exam = await Exam.findOne({ code: req.params.code });
+    console.log(req.params.code)
+    if (!exam) return res.status(404).json({ message: "Exam not found" });
+    res.status(200).json(exam);
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to fetch exam", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Update exam
+// ✅ Update exam by code
 export const updateExam = async (req, res) => {
   try {
-    const exam = await Exam.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
-    res.status(200).json({ success: true, message: "Exam updated successfully", exam });
+    const exam = await Exam.findOneAndUpdate(
+      { code: req.params.code },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!exam) return res.status(404).json({ message: "Exam not found" });
+    res.status(200).json({ message: "Exam updated successfully", exam });
   } catch (error) {
-    res.status(400).json({ success: false, message: "Failed to update exam", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Delete exam
+
+
+// ✅ Delete exam by code
 export const deleteExam = async (req, res) => {
   try {
-    const exam = await Exam.findByIdAndDelete(req.params.id);
-    if (!exam) return res.status(404).json({ success: false, message: "Exam not found" });
-    res.status(200).json({ success: true, message: "Exam deleted successfully" });
+    const exam = await Exam.findOneAndDelete({ code: req.params.code });
+    if (!exam) return res.status(404).json({ message: "Exam not found" });
+    res.status(200).json({ message: "Exam deleted successfully", exam });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to delete exam", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };

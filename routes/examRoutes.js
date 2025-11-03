@@ -1,29 +1,14 @@
 import express from "express";
-import {
-  createExam,
-  getExams,
-  getExamById,
-  updateExam,
-  deleteExam,
-} from "../controllers/examController.js";   // <-- added .js
-
+import { createExam, getAllExams, getExamByCode,deleteExam,updateExam } from "../controllers/examController.js";
 
 const router = express.Router();
 
-// Create exam
-router.post("/", createExam);
+router.post("/exams", createExam);
+router.get("/exams", getAllExams);
+router.get("/exams/:code", getExamByCode);
+router.delete("/exams/:code",deleteExam);
 
-// Get all exams
+router.put("/exams/:code",updateExam);
 
-router.get("/", getExams);
-
-// Get exam by ID
-router.get("/:id", getExamById);
-
-// Update exam
-router.put("/:id", updateExam);
-
-// Delete exam
-router.delete("/:id", deleteExam);
 
 export default router;

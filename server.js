@@ -20,7 +20,7 @@ app.use(cors());
 // Routes
 app.use("/api/users/auth", userAuthRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
-app.use("/api/exams", examRoutes);
+app.use("/api", examRoutes);
 app.use("/api/exam-applications", examApplicationRoutes);
 app.use("/api/registrations", examRegistrationRoutes);
 
