@@ -2,7 +2,7 @@
 import ExamApplication from "../models/ExamApplication.js";
 import User from "../models/User.js";
 import Exam from "../models/Exam.js";
-console.log("he");
+
 // Apply for an exam
 export const applyExam = async (req, res) => {
   try {
