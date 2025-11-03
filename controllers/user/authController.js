@@ -4,7 +4,6 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 dotenv.config(); // Make sure env variables are loaded at the very top
-// import { sendSMS } from "../../utils/sendWhatsApp.js"; // import our utility
 import { sendWhatsApp } from "../../utils/sendWhatsApp.js";
 import User from "../../models/User.js";
 import bcrypt from "bcrypt";
@@ -21,20 +20,23 @@ const JWT_SECRET =
 const JWT_EXPIRES = "1d";
 
 // ✅ Configure Nodemailer transporter using Gmail
-// const transporter = nodemailer.createTransport({
-//   service: "gmail",
-//   auth: {
-//     user: process.env.EMAIL_USER,
-//     pass: process.env.EMAIL_PASS,
-//   },
-// });
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "kandpaldeepak253@gmail.com",
-    pass: "ytpl sqpy fokh ldck", // your Gmail App Password
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
+
+
+// const transporter = nodemailer.createTransport({
+//   host: "smtp-relay.brevo.com",
+//   port: 587,
+//   auth: {
+//     user: process.env.BREVO_USER,
+//     pass: process.env.BREVO_PASS,
+//   },
+// });
 
 
 // ✅ Verify transporter once when the server starts
@@ -192,47 +194,7 @@ export const login = async (req, res) => {
 };
 //otp 
 // ✅ Send OTP for profile update
-// export const sendProfileUpdateOTP = async (req, res) => {
-//   try {
-//     const { userId } = req.params;
 
-//     // ✅ Validate user
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ msg: "User not found" });
-
-//     // ✅ Generate random 6-digit OTP
-//     const otp = Math.floor(100000 + Math.random() * 900000);
-
-//     // ✅ Save OTP and expiry (5 min)
-//     user.otp = otp;
-//     user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
-//     await user.save();
-
-//     // ✅ Respond immediately (don’t wait for email)
-//     res.status(200).json({ msg: "OTP generated successfully" });
-
-//     // ✅ Send email asynchronously (non-blocking)
-//     const mailOptions = {
-//       from: `"Cognoscente Invented Pvt. Ltd." <${process.env.EMAIL_USER}>`,
-//       to: user.email,
-//       subject: "OTP Verification for Profile Update 🔐",
-//       html: `
-//         <p>Dear ${user.name},</p>
-//         <p>Your One-Time Password (OTP) for updating your profile is:</p>
-//         <h2>${otp}</h2>
-//         <p>This OTP is valid for 5 minutes.</p>
-//         <p>Best regards,<br/>Cognoscente Invented Pvt. Ltd. Team</p>
-//       `,
-//     };
-
-//     transporter.sendMail(mailOptions).catch(err => {
-//       console.error("Background email send failed:", err);
-//     });
-//   } catch (err) {
-//     console.error("OTP send error:", err);
-//     res.status(500).json({ msg: "Failed to generate OTP", error: err.message });
-//   }
-// };
 
 
 
@@ -492,49 +454,6 @@ export const getUserById = async (req, res) => {
 };
 //logic of passed 
 
-export const markStepPassed = async (userId, step) => {
-  const user = await User.findById(userId);
-  if (!user) throw new Error("User not found");
-
-  const now = new Date();
-
-  switch (step) {
-    case "step1":
-      user.progression.step1.status = "passed";
-      user.progression.step1.completedDate = now;
-      user.progression.currentLevel = 2;
-      user.progression.step2.status = "not_started";
-      break;
-    case "step2":
-      user.progression.step2.status = "passed";
-      user.progression.step2.completedDate = now;
-      user.progression.currentLevel = 3;
-      user.progression.step3A.status = "not_started";
-      user.progression.step3B.status = "not_started";
-      break;
-    case "step3A":
-      user.progression.step3A.status = "passed";
-      user.progression.step3A.completedDate = now;
-      break;
-    case "step3B":
-      user.progression.step3B.status = "passed";
-      user.progression.step3B.completedDate = now;
-      break;
-  }
-
-  if (
-    user.progression.step1.status === "passed" &&
-    user.progression.step2.status === "passed" &&
-    user.progression.step3A.status === "passed" &&
-    user.progression.step3B.status === "passed"
-  ) {
-    user.progression.allStepsCompleted = true;
-    user.progression.completionDate = now;
-  }
-
-  await user.save();
-  return user.progression;
-};
 export const adminMarkStepPassed = async (req, res) => {
   try {
     const { userId, applicationId, status } = req.body;
@@ -544,32 +463,24 @@ export const adminMarkStepPassed = async (req, res) => {
     if (!["passed", "failed", "absent"].includes(status))
       return res.status(400).json({ msg: "Status must be 'passed', 'failed', or 'absent'" });
 
-    // ✅ Find user first
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    // ✅ Check if application belongs to this user
-    const aplDoc = await ExamRegistration.findOne({ 
-      userId,  // must match the same user
-      applicationNumber: applicationId 
-    });
+    const aplDoc = await ExamRegistration.findOne({ userId, applicationNumber: applicationId });
 
-    // ✅ Detect overall step-level IDs
     const isOverallStep1 = user.progression?.step1?.applicationId === applicationId;
     const isOverallStep3 = user.progression?.step3?.applicationId === applicationId;
 
-    // If neither belongs to user nor overall step matches
-    if (!aplDoc && !isOverallStep1 && !isOverallStep3) {
+    if (!aplDoc && !isOverallStep1 && !isOverallStep3)
       return res.status(404).json({ msg: "Application ID not found for this user" });
-    }
 
-    // ✅ If found in ExamRegistration, mark status
+    // ✅ Update application document
     if (aplDoc) {
       aplDoc.applicationInfo.applicationStatus = status;
       await aplDoc.save();
     }
 
-    // ✅ Ensure progression structure
+    // ✅ Initialize progression safely
     if (!user.progression) user.progression = {};
     const { step1 = {}, step2 = {}, step3 = {} } = user.progression;
     if (!step1.papers) step1.papers = {};
@@ -577,12 +488,8 @@ export const adminMarkStepPassed = async (req, res) => {
     if (!step3.partB) step3.partB = {};
 
     const now = new Date();
-    let found = false;
-
-    // ✅ Helper
     const updatePaper = (paper = {}) => {
       if (paper.applicationId === applicationId) {
-        found = true;
         paper.status = status;
         paper.completedDate = now;
       }
@@ -591,13 +498,11 @@ export const adminMarkStepPassed = async (req, res) => {
 
     // ---------- STEP 1 ----------
     if (isOverallStep1) {
-      found = true;
       for (const key of ["paper1", "paper2"]) {
         if (!step1.papers[key]) step1.papers[key] = {};
         step1.papers[key].status = status;
         step1.papers[key].completedDate = now;
       }
-      step1.status = status;
       step1.overallStatus = status;
       step1.completedDate = now;
     } else {
@@ -608,64 +513,89 @@ export const adminMarkStepPassed = async (req, res) => {
     const p1 = step1.papers.paper1?.status;
     const p2 = step1.papers.paper2?.status;
 
-    // ---------- STEP 1 Logic ----------
-    user.progression.currentLevel = 1;
     if (p1 === "passed" && p2 === "passed") {
       step1.overallStatus = "passed";
       step1.completedDate = now;
-      step2.status = "open";
-      user.progression.currentLevel = 2;
-    } else if ((p1 === "passed" && p2 !== "passed") || (p2 === "passed" && p1 !== "passed")) {
-      step1.overallStatus = "in-progress";
-      user.progression.currentLevel = p1 === "passed" ? "1A" : "1B";
+      if (step2.status !== "passed") step2.status = "open";
     } else if (p1 === "failed" || p2 === "failed") {
       step1.overallStatus = "failed";
       step2.status = "closed";
-      user.progression.currentLevel = 1;
     }
 
     // ---------- STEP 2 ----------
     if (step2.applicationId === applicationId) {
-      found = true;
       step2.status = status;
       step2.overallStatus = status;
       step2.completedDate = now;
 
       if (status === "passed") {
-        step3.partA = { status: "open" };
-        step3.partB = { status: "open" };
-        user.progression.currentLevel = 3;
-      } else {
-        step3.partA = { status: "closed" };
-        step3.partB = { status: "closed" };
+        step3.partA.status = step3.partA.status || "open";
+        step3.partB.status = step3.partB.status || "open";
+      } else if (status === "failed") {
+        step3.partA.status = "closed";
+        step3.partB.status = "closed";
       }
     }
 
- // ---------- STEP 3 ----------
-if (isOverallStep3) {
-  found = true;
-  for (const part of ["partA", "partB"]) {
-    if (!step3[part]) step3[part] = {};
-    step3[part].status = status;
-    step3[part].completedDate = now;
-  }
-  step3.overallStatus = status;
-  step3.completedDate = now;
-} else {
-  step3.partA = updatePaper(step3.partA);
-  step3.partB = updatePaper(step3.partB);
-}
+    // ---------- STEP 3 ----------
+    if (isOverallStep3) {
+      for (const part of ["partA", "partB"]) {
+        if (!step3[part]) step3[part] = {};
+        step3[part].status = status;
+        step3[part].completedDate = now;
+      }
+      step3.overallStatus = status;
+      step3.completedDate = now;
+    } else {
+      step3.partA = updatePaper(step3.partA);
+      step3.partB = updatePaper(step3.partB);
+    }
 
-// ✅ Step 2 should always remain as it was — do NOT modify it
-// (Even if step3 fails, step2 stays passed)
-if (step2.status === "passed") {
-  // Keep it permanently passed
-  step2.overallStatus = "passed";
-} else {
-  // Keep existing status if not passed yet
-  step2.status = step2.status || "open";
-}
+    // ---------- CURRENT LEVEL LOGIC ----------
+    const partA = step3.partA?.status;
+    const partB = step3.partB?.status;
 
+    let currentLevel = 1;
+
+    if (step1.overallStatus === "passed") currentLevel = 2;
+
+    if (step1.overallStatus === "passed" && step2.status === "passed")
+      currentLevel = 3;
+
+    if (
+      step1.overallStatus === "passed" &&
+      step2.status === "passed" &&
+      step3.overallStatus === "passed"
+    ) {
+      step3.overallStatus = "passed";
+      step3.completedDate = now;
+      currentLevel = 4;
+      step3.overallStatus=="passed"
+  
+    } else if (
+      step1.overallStatus === "passed" &&
+      step2.overallStatus === "passed" &&
+      (partA === "failed" || partB === "failed" || partA === "open" || partB === "open")
+    ) {
+      currentLevel = 3; // stay at 3 if any part failed or not completed
+      step3.overallStatus = "incomplete";
+    }
+
+    // ---------- ALL STEPS COMPLETED ----------
+    const allStepsCompleted =
+      step1.overallStatus === "passed" &&
+      step2.overallStatus === "passed" &&
+      step3.overallStatus === "passed";
+
+    user.progression.allStepsCompleted = allStepsCompleted;
+    user.progression.completionDate = allStepsCompleted ? now : null;
+     user.progression.allStepsCompleted = true;
+
+    // ✅ Save progression
+    user.progression.step1 = step1;
+    user.progression.step2 = step2;
+    user.progression.step3 = step3;
+    user.progression.currentLevel = currentLevel;
 
     await user.save();
 
@@ -673,7 +603,6 @@ if (step2.status === "passed") {
       msg: `Application ${applicationId} marked as ${status} successfully`,
       progression: user.progression,
     });
-
   } catch (err) {
     console.error("❌ Admin mark step status error:", err);
     res.status(500).json({ msg: "Server error", error: err.message });
@@ -681,181 +610,6 @@ if (step2.status === "passed") {
 };
 
 
-
-// export const adminMarkStepPassed = async (req, res) => {
-//   try {
-//     const { userId, applicationId, status } = req.body;
-
-//     if (!userId) return res.status(400).json({ msg: "userId is required" });
-//     if (!applicationId) return res.status(400).json({ msg: "applicationId is required" });
-//     if (!["passed", "failed", "absent"].includes(status))
-//       return res.status(400).json({ msg: "Status must be 'passed', 'failed' or 'absent'" });
-
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ msg: "User not found" });
-
-//     const now = new Date();
-//     let found = false;
-
-//     let aplDoc = await ExamRegistration.findOne({ applicationNumber: applicationId });
-
-//     const isOverallStep1 =
-//       user.progression?.step1?.applicationId &&
-//       user.progression.step1.applicationId === applicationId;
-
-//     const isOverallStep3 =
-//       user.progression?.step3?.applicationId &&
-//       user.progression.step3.applicationId === applicationId;
-
-//     if (!aplDoc && !isOverallStep1 && !isOverallStep3)
-//       return res.status(404).json({ msg: "Application not found" });
-
-//     if (aplDoc) {
-//       aplDoc.applicationInfo.applicationStatus = status;
-//       await aplDoc.save();
-//     }
-
-//     if (!user.progression) user.progression = {};
-//     if (!user.progression.step1) user.progression.step1 = {};
-//     if (!user.progression.step1.papers) user.progression.step1.papers = {};
-//     if (!user.progression.step2) user.progression.step2 = {};
-//     if (!user.progression.step3) user.progression.step3 = {};
-//     if (!user.progression.step3.partA) user.progression.step3.partA = {};
-//     if (!user.progression.step3.partB) user.progression.step3.partB = {};
-
-//     const { step1, step2, step3 } = user.progression;
-
-//     // ✅ Helper to update any paper/part safely
-//     const updatePaper = (paper = {}) => {
-//       if (paper.applicationId === applicationId) {
-//         found = true;
-//         paper.status = status;
-//         paper.completedDate = now;
-//       }
-//       return paper;
-//     };
-
-//     // ---------- STEP 1 ----------
-//     const papers = step1.papers;
-//     if (isOverallStep1) {
-//       found = true;
-//       for (const key of ["paper1", "paper2"]) {
-//         if (!papers[key]) papers[key] = {};
-//         papers[key].status = status;
-//         papers[key].completedDate = now;
-
-//         if (papers[key].applicationId) {
-//           await ExamRegistration.updateOne(
-//             { applicationNumber: papers[key].applicationId },
-//             { $set: { "applicationInfo.applicationStatus": status } }
-//           );
-//         }
-//       }
-
-//       step1.status = status;
-//       step1.overallStatus = status;
-//       step1.completedDate = now;
-//     } else {
-//       papers.paper1 = updatePaper(papers.paper1);
-//       papers.paper2 = updatePaper(papers.paper2);
-//     }
-
-//     const paper1Status = papers.paper1?.status;
-//     const paper2Status = papers.paper2?.status;
-
-//     // ---------- DYNAMIC LEVEL LOGIC ----------
-//     user.progression.currentLevel = 1; // default
-
-//     if (paper1Status === "passed" && paper2Status === "passed") {
-//       step1.status = "passed";
-//       step1.overallStatus = "passed";
-//       step1.completedDate = now;
-//       step2.status = "open";
-//       user.progression.currentLevel = 2;
-//     } else if (
-//       (paper1Status === "passed" && paper2Status !== "passed") ||
-//       (paper2Status === "passed" && paper1Status !== "passed")
-//     ) {
-//       step1.overallStatus = "in-progress";
-//       if (paper1Status === "passed") user.progression.currentLevel = "1A";
-//       if (paper2Status === "passed") user.progression.currentLevel = "1B";
-//     } else if (paper1Status === "failed" || paper2Status === "failed") {
-//       step1.overallStatus = "failed";
-//       user.progression.currentLevel = 1;
-//       step2.status = "closed";
-//     }
-
-//     // ---------- STEP 2 ----------
-//     if (user.progression.step2.applicationId === applicationId) {
-//       found = true;
-//       step2.status = status;
-//       step2.overallStatus = status;
-//       step2.completedDate = now;
-
-//       if (status === "passed") {
-//         step3.partA = { status: "open" };
-//         step3.partB = { status: "open" };
-//         user.progression.currentLevel = 3;
-//       } else {
-//         step3.partA = { status: "closed" };
-//         step3.partB = { status: "closed" };
-//       }
-//     }
-
-//     // ---------- STEP 3 ----------
-//     // ✅ If overall Step 3 application ID is used
-//     if (isOverallStep3) {
-//       found = true;
-
-//       for (const part of ["partA", "partB"]) {
-//         if (!step3[part]) step3[part] = {};
-//         step3[part].status = status;
-//         step3[part].completedDate = now;
-
-//         if (step3[part].applicationId) {
-//           await ExamRegistration.updateOne(
-//             { applicationNumber: step3[part].applicationId },
-//             { $set: { "applicationInfo.applicationStatus": status } }
-//           );
-//         }
-//       }
-
-//       step3.overallStatus = status;
-//       step3.completedDate = now;
-//     } else {
-//       step3.partA = updatePaper(step3.partA);
-//       step3.partB = updatePaper(step3.partB);
-//     }
-
-//     // ---------- FINAL COMPLETION ----------
-//     const allStepsPassed =
-//       step1.overallStatus === "passed" &&
-//       step2.status === "passed" &&
-//       step3.partA?.status === "passed" &&
-//       step3.partB?.status === "passed";
-
-//     if (allStepsPassed) {
-//       user.progression.currentLevel = 4;
-//       user.progression.allStepsCompleted = true;
-//       user.progression.completionDate = now;
-//     } else {
-//       user.progression.allStepsCompleted = false;
-//       user.progression.completionDate = null;
-//     }
-
-
-
-//     await user.save();
-
-//     res.status(200).json({
-//       msg: `Application ${applicationId} marked as ${status} successfully`,
-//       progression: user.progression,
-//     });
-//   } catch (err) {
-//     console.error("❌ Admin mark step status error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
 
 
 //edit api
