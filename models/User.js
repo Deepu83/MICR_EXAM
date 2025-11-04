@@ -157,7 +157,7 @@ const Step3Schema = new mongoose.Schema({
   partB: { type: Step3PartSchema, default: () => ({}) },
     overallStatus: {
     type: String,
-    enum: ["open", "filled", "submitted", "passed", "failed","absent","closed","in-progress"],
+    enum: ["open", "filled", "submitted", "passed", "failed","absent","closed","in-progress","incomplete"],
     default: "closed",
   },
   applicationId: { type: String, default: null },

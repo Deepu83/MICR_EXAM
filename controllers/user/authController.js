@@ -565,6 +565,7 @@ export const adminMarkStepPassed = async (req, res) => {
 
     if (p1 === "passed" && p2 === "passed") {
       step1.overallStatus = "passed";
+       step1.allPapersPassed = true;  //
       step1.completedDate = now;
       if (step2.status !== "passed") step2.status = "open";
     } else if (p1 === "failed" || p2 === "failed") {
@@ -587,7 +588,58 @@ export const adminMarkStepPassed = async (req, res) => {
         step3.partB.status = "closed";
       }
     }
-    
+    if (step3.partA.applicationId === applicationId) {
+  // Part A status update
+  step3.partA.status = status;
+  step3.partA.completedDate = now;
+
+  if (status === "passed") {
+    // If A passed → open B
+    step3.partB.status = step3.partB.status === "closed" ? "open" : step3.partB.status;
+    step3.overallStatus = "open";
+  } else if (status === "failed") {
+    step3.partA.status = "failed";
+    step3.partB.status = "closed";
+    step3.overallStatus = "failed";
+  }
+}
+
+
+//step 3
+
+// ---------- STEP 3 (Part A) ----------
+if (step3.partA.applicationId === applicationId) {
+  step3.partA.status = status;
+  step3.partA.completedDate = now;
+
+  if (status === "passed") {
+    // If A passed → open B
+    if (step3.partB.status === "closed") step3.partB.status = "open";
+    step3.overallStatus = "open";
+  } else if (status === "failed") {
+    step3.partB.status = "closed";
+    step3.overallStatus = "failed";
+  }
+}
+
+// ---------- STEP 3 (Part B) ----------
+if (step3.partB.applicationId === applicationId) {
+  step3.partB.status = status;
+  step3.partB.completedDate = now;
+
+  if (status === "passed") {
+    if (step3.partA.status === "passed") {
+      // ✅ Both A & B passed → Step 3 complete
+      step3.overallStatus = "passed";
+      step3.completedDate = now;
+    } else {
+      step3.overallStatus = "open";
+    }
+  } else if (status === "failed") {
+    step3.overallStatus = "failed";
+  }
+}
+
     
 // ---------- CURRENT LEVEL LOGIC ----------
 
@@ -610,33 +662,23 @@ if (paperA === "passed" && paperB !== "passed") {
 
 // 🧩 Step 2 and Step 3 logic
 if (step1.overallStatus === "passed" && step2.status === "passed") {
-  currentLevel = 3;
-
-  
- if (partA === "passed" ) {
-    currentLevel = "3B";
-  } else if (partB === "passed" ) {
-    currentLevel = "3A";
-    
-  } else if (partA === "passed" && partB === "passed") {
+  // ✅ Check both passed first — priority highest
+  if (partA === "passed" && partB === "passed") {
     currentLevel = 4;
     step3.overallStatus = "passed";
     step3.completedDate = now;
-  } else if (
-    partA === "failed" ||
-    partB === "failed" ||
-    partA === "open" ||
-    partB === "open"
-  ) {
-    currentLevel = 3; // Stay on level 3 if incomplete or failed
-    step3.overallStatus = "incomplete";
+  } else if (partA === "passed" && partB !== "passed") {
+    currentLevel = "3B";
+  } else if (partB === "passed" && partA !== "passed") {
+    currentLevel = "3A";
+  } else {
+    currentLevel = 3; // still in progress
   }
 }
-
 // ---------- ALL STEPS COMPLETED ----------
 const allStepsCompleted =
   step1.overallStatus === "passed" &&
-  step2.overallStatus === "passed" &&
+  step2.status === "passed" &&
   step3.overallStatus === "passed";
 
 user.progression.allStepsCompleted = allStepsCompleted;
