@@ -17,17 +17,17 @@ const ExamRegistrationSchema = new mongoose.Schema(
     //   ref: "Exam",
     //   required: true,
     // },
-examId: {
-  type: String,   // <- Change to string
-  required: true,
-},
+    examId: {
+      type: String,   // <- Change to string
+      required: true,
+    },
     applicationInfo: {
       applicationDate: { type: Date, default: Date.now },
       examDate: { type: Date, required: true },
       // examCenter: { type: String, required: true },
       applicationStatus: {
         type: String,
-        enum: ["pending", "passed", "absent", "cancelled","failed"],
+        enum: ["pending", "passed", "absent", "cancelled", "failed"],
         default: "pending",
       },
       paymentStatus: {
@@ -38,11 +38,11 @@ examId: {
       paymentDate: { type: Date, default: null },
       paymentAmount: { type: Number, required: true, min: 0 },
       //s
-  currency: { type: String, default: "INR" },               // ISO currency code
-  paymentMode: { type: String, default: "Razorpay" },       // e.g., Razorpay, Stripe, PayPal
-  transactionId: { type: String, default: "" },
-  country: { type: String, default: "India" },              // for reporting
-  // exchangeRate: { type: Number, default: 1 },     
+      currency: { type: String, default: "INR" },               // ISO currency code
+      paymentMode: { type: String, default: "Razorpay" },       // e.g., Razorpay, Stripe, PayPal
+      transactionId: { type: String, default: "" },
+      country: { type: String, default: "India" },              // for reporting
+      // exchangeRate: { type: Number, default: 1 },     
       remarks: { type: String, default: "" },
     },
 
@@ -65,15 +65,24 @@ examId: {
       remarks: { type: String, default: "" },
     },
     //
-        centers: {
+    centers: {
       center1: { type: String },
       center2: { type: String },
+      center3: { type: String },
+      center4: { type: String },
+      center5: { type: String },
+      center6: { type: String },
+      center7: { type: String },
+      center8: { type: String },
+      center9: { type: String },
+      center10: { type: String },
+      center11: { type: String },
     },
     //
   },
 
   //add center 
-  
+
   { timestamps: true } // automatically adds createdAt and updatedAt
 );
 

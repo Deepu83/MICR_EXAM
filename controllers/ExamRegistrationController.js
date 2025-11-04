@@ -590,7 +590,7 @@ export const getAdmitCard = async (req, res) => {
       reportingTime: appInfo.reportingTime || "08:30 AM",
       gateClosingTime: appInfo.gateClosingTime || null,
       examTimings: appInfo.timing || null,
-      centerName: [centers.center1, centers.center2].filter(Boolean),
+      centerName: [centers.center1, centers.center2, centers.center3, centers.center4, centers.center5, centers.center6, centers.center7, centers.center8, centers.center9].filter(Boolean),
       venue: centers.venue || centers.address || null,
       testCenterNumber: centers.testCenterNumber || null,
       remarks: appInfo.remarks || null,
