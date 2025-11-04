@@ -581,6 +581,7 @@ export const adminMarkStepPassed = async (req, res) => {
       if (status === "passed") {
         step3.partA.status = step3.partA.status || "open";
         step3.partB.status = step3.partB.status || "open";
+        
       } else if (status === "failed") {
         step3.partA.status = "closed";
         step3.partB.status = "closed";
@@ -588,18 +589,71 @@ export const adminMarkStepPassed = async (req, res) => {
     }
 
     // ---------- STEP 3 ----------
-    if (isOverallStep3) {
-      for (const part of ["partA", "partB"]) {
-        if (!step3[part]) step3[part] = {};
-        step3[part].status = status;
-        step3[part].completedDate = now;
-      }
-      step3.overallStatus = status;
-      step3.completedDate = now;
-    } else {
-      step3.partA = updatePaper(step3.partA);
-      step3.partB = updatePaper(step3.partB);
+    // if (isOverallStep3) {
+    //   for (const part of ["partA", "partB"]) {
+    //     if (!step3[part]) step3[part] = {};
+    //     step3[part].status = status;
+    //     step3[part].completedDate = now;
+    //   }
+    //   step3.overallStatus = status;
+    //   step3.completedDate = now;
+    // } else {
+    //   step3.partA = updatePaper(step3.partA);
+    //   step3.partB = updatePaper(step3.partB);
+    // }
+// ---------- STEP 3 ----------
+if (isOverallStep3) {
+  // ✅ Admin marks both parts together
+  for (const part of ["partA", "partB"]) {
+    if (!step3[part]) step3[part] = {};
+    step3[part].status = status;
+    step3[part].completedDate = now;
+  }
+
+  step3.overallStatus = status;
+  step3.completedDate = now;
+} else {
+  // ✅ Update only the part that matches this application
+  let updated = false;
+
+  if (step3.partA?.applicationId === applicationId) {
+    step3.partA = updatePaper(step3.partA);
+    updated = true;
+  }
+
+  if (step3.partB?.applicationId === applicationId) {
+    step3.partB = updatePaper(step3.partB);
+    updated = true;
+  }
+
+  // ✅ Ensure parts are open if Step 2 passed
+  if (step2.status === "passed") {
+    if (!step3.partA || step3.partA.status === "closed") {
+      step3.partA = step3.partA || {};
+      step3.partA.status = "open";
     }
+
+    if (!step3.partB || step3.partB.status === "closed") {
+      step3.partB = step3.partB || {};
+      step3.partB.status = "open";
+    }
+  }
+
+  // ✅ Determine overall Step 3 status dynamically
+  const partAStatus = step3.partA?.status;
+  const partBStatus = step3.partB?.status;
+
+  if (partAStatus === "passed" && partBStatus === "passed") {
+    step3.overallStatus = "passed";
+    step3.completedDate = now;
+  } else if (partAStatus === "failed" || partBStatus === "failed") {
+    step3.overallStatus = "failed";
+  } else if (partAStatus === "open" || partBStatus === "open") {
+    step3.overallStatus = "open";
+  } else {
+    step3.overallStatus = "incomplete";
+  }
+}
 
     // ---------- CURRENT LEVEL LOGIC ----------
     const partA = step3.partA?.status;
