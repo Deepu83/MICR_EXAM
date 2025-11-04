@@ -580,7 +580,8 @@ export const adminMarkStepPassed = async (req, res) => {
       step2.completedDate = now;
 
       if (status === "passed") {
-        step3.partA.status = step3.partA.status || "open";
+        // step3.partA.status = step3.partA.status || "open";
+        step3.partA.status = "open";
         step3.partB.status = step3.partB.status || "open";
         
       } else if (status === "failed") {
