@@ -653,19 +653,30 @@ export const adminMarkStepPassed = async (req, res) => {
 const partA = step3.partA?.status;
 const partB = step3.partB?.status;
 
+// / ✅ Optional chaining to prevent undefined access
+const paperA = step1?.papers?.paper1?.status || null;
+const paperB = step1?.papers?.paper2?.status || null;
+
 let currentLevel = 1;
 
+// Step 1 passed → level 2
 if (step1.overallStatus === "passed") currentLevel = 2;
 
+// Step 2 passed → move to Step 3 logic
 if (step1.overallStatus === "passed" && step2.status === "passed") {
-  // Step 2 done → start Step 3
   currentLevel = 3;
 
-  // 🧠 Handle detailed part-level logic
-  if (partA === "passed" && partB !== "passed") {
-    currentLevel = "3A";
-  } else if (partB === "passed" && partA !== "passed") {
+  // 🧠 Handle Step 1 paper sub-progress (if you really need this)
+  if (paperA === "passed" && paperB !== "passed") {
+    currentLevel = "1B";
+  } else if (paperB === "passed" && paperA !== "passed") {
+    currentLevel = "1A";
+  }
+ if (partA === "passed" ) {
     currentLevel = "3B";
+  } else if (partB === "passed" ) {
+    currentLevel = "3A";
+    
   } else if (partA === "passed" && partB === "passed") {
     currentLevel = 4;
     step3.overallStatus = "passed";
