@@ -587,91 +587,32 @@ export const adminMarkStepPassed = async (req, res) => {
         step3.partB.status = "closed";
       }
     }
-
-    // ---------- STEP 3 ----------
-    // if (isOverallStep3) {
-    //   for (const part of ["partA", "partB"]) {
-    //     if (!step3[part]) step3[part] = {};
-    //     step3[part].status = status;
-    //     step3[part].completedDate = now;
-    //   }
-    //   step3.overallStatus = status;
-    //   step3.completedDate = now;
-    // } else {
-    //   step3.partA = updatePaper(step3.partA);
-    //   step3.partB = updatePaper(step3.partB);
-    // }
-
-    // ---------- CURRENT LEVEL LOGIC ----------
-    // const partA = step3.partA?.status;
-    // const partB = step3.partB?.status;
-
-    // let currentLevel = 1;
-
-    // if (step1.overallStatus === "passed") currentLevel = 2;
-
-    // if (step1.overallStatus === "passed" && step2.status === "passed")
-    //   currentLevel = 3;
-
-    // if (
-    //   step1.overallStatus === "passed" &&
-    //   step2.status === "passed" &&
-    //   step3.overallStatus === "passed"
-    // ) {
-    //   step3.overallStatus = "passed";
-    //   step3.completedDate = now;
-    //   currentLevel = 4;
-    //   step3.overallStatus=="passed"
-  
-    // } else if (
-    //   step1.overallStatus === "passed" &&
-    //   step2.overallStatus === "passed" &&
-    //   (partA === "failed" || partB === "failed" || partA === "open" || partB === "open")
-    // ) {
-    //   currentLevel = 3; // stay at 3 if any part failed or not completed
-    //   step3.overallStatus = "incomplete";
-    // }
-
-    // // ---------- ALL STEPS COMPLETED ----------
-    // const allStepsCompleted =
-    //   step1.overallStatus === "passed" &&
-    //   step2.overallStatus === "passed" &&
-    //   step3.overallStatus === "passed";
-
-    // user.progression.allStepsCompleted = allStepsCompleted;
-    // user.progression.completionDate = allStepsCompleted ? now : null;
-    //  user.progression.allStepsCompleted = true;
-
-    // // ✅ Save progression
-    // user.progression.step1 = step1;
-    // user.progression.step2 = step2;
-    // user.progression.step3 = step3;
-    // user.progression.currentLevel = currentLevel;
     
     
 // ---------- CURRENT LEVEL LOGIC ----------
-const partA = step3.partA?.status;
-const partB = step3.partB?.status;
 
-// / ✅ Optional chaining to prevent undefined access
 const paperA = step1?.papers?.paper1?.status || null;
 const paperB = step1?.papers?.paper2?.status || null;
+const partA = step3?.partA?.status || null;
+const partB = step3?.partB?.status || null;
 
 let currentLevel = 1;
 
-// Step 1 passed → level 2
-if (step1.overallStatus === "passed") currentLevel = 2;
+// 🧩 Handle Step 1 progression first
+if (paperA === "passed" && paperB !== "passed") {
+  currentLevel = "1B"; // Paper1 passed → show 1B next
+} else if (paperB === "passed" && paperA !== "passed") {
+  currentLevel = "1A"; // Paper2 passed → show 1A next
+} else if (paperA === "passed" && paperB === "passed") {
+  step1.overallStatus = "passed";
+  currentLevel = 2; // Both done → move to Step 2
+}
 
-// Step 2 passed → move to Step 3 logic
+// 🧩 Step 2 and Step 3 logic
 if (step1.overallStatus === "passed" && step2.status === "passed") {
   currentLevel = 3;
 
-  // 🧠 Handle Step 1 paper sub-progress (if you really need this)
-  if (paperA === "passed" && paperB !== "passed") {
-    currentLevel = "1B";
-  } else if (paperB === "passed" && paperA !== "passed") {
-    currentLevel = "1A";
-  }
+  
  if (partA === "passed" ) {
     currentLevel = "3B";
   } else if (partB === "passed" ) {
