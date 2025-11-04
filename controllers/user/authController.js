@@ -2,17 +2,17 @@
 import cloudinary from "../../config/cloudinary.js";
 import fs from "fs";
 import path from "path";
+// import dotenv from "dotenv";
+// import sgMail from "@sendgrid/mail";
 import dotenv from "dotenv";
-dotenv.config(); // Make sure env variables are loaded at the very top
-// import { sendSMS } from "../../utils/sendWhatsApp.js"; // import our utility
-import { sendWhatsApp } from "../../utils/sendWhatsApp.js";
+// dotenv.config(); // Make sure env variables are loaded at the very top
+
 import User from "../../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { generateRegisterNo } from "../../utils/generateRegisterNo.js";
 import ExamRegistration from "../../models/ExamRegistration.js";
-import { CURSOR_FLAGS } from "mongodb";
 
 
 const JWT_SECRET =
@@ -192,6 +192,12 @@ export const login = async (req, res) => {
 };
 //otp 
 // ✅ Send OTP for profile update
+
+
+
+
+// Create transporter directly (no env vars)
+
 // export const sendProfileUpdateOTP = async (req, res) => {
 //   try {
 //     const { userId } = req.params;
@@ -208,12 +214,12 @@ export const login = async (req, res) => {
 //     user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
 //     await user.save();
 
-//     // ✅ Respond immediately (don’t wait for email)
+//     // ✅ Respond immediately
 //     res.status(200).json({ msg: "OTP generated successfully" });
 
-//     // ✅ Send email asynchronously (non-blocking)
+//     // ✅ Send email in background
 //     const mailOptions = {
-//       from: `"Cognoscente Invented Pvt. Ltd." <${process.env.EMAIL_USER}>`,
+//       from: `"Cognoscente Invented Pvt. Ltd." <kandpaldeepak253@gmail.com>`,
 //       to: user.email,
 //       subject: "OTP Verification for Profile Update 🔐",
 //       html: `
@@ -225,60 +231,67 @@ export const login = async (req, res) => {
 //       `,
 //     };
 
-//     transporter.sendMail(mailOptions).catch(err => {
-//       console.error("Background email send failed:", err);
-//     });
+//     transporter.sendMail(mailOptions)
+//       .then(() => console.log("✅ OTP email sent to", user.email))
+//       .catch(err => console.error("❌ Email send error:", err));
 //   } catch (err) {
 //     console.error("OTP send error:", err);
 //     res.status(500).json({ msg: "Failed to generate OTP", error: err.message });
 //   }
 // };
 
+import sgMail from "@sendgrid/mail";
 
 
-// Create transporter directly (no env vars)
+dotenv.config();
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 export const sendProfileUpdateOTP = async (req, res) => {
   try {
     const { userId } = req.params;
-
-    // ✅ Validate user
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    // ✅ Generate random 6-digit OTP
+    // ✅ Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
-
-    // ✅ Save OTP and expiry (5 min)
     user.otp = otp;
-    user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
+    user.otpExpires = Date.now() + 5 * 60 * 1000;
     await user.save();
 
-    // ✅ Respond immediately
-    res.status(200).json({ msg: "OTP generated successfully" });
-
-    // ✅ Send email in background
-    const mailOptions = {
-      from: `"Cognoscente Invented Pvt. Ltd." <kandpaldeepak253@gmail.com>`,
+    // ✅ Correct SendGrid message format
+    const msg = {
       to: user.email,
+      from: {
+        email: process.env.EMAIL_FROM, // email FIRST
+        name: "Cognoscente Invented Pvt. Ltd.",
+      },
       subject: "OTP Verification for Profile Update 🔐",
       html: `
         <p>Dear ${user.name},</p>
         <p>Your One-Time Password (OTP) for updating your profile is:</p>
-        <h2>${otp}</h2>
-        <p>This OTP is valid for 5 minutes.</p>
+        <h2 style="color:#2E86C1;">${otp}</h2>
+        <p>This OTP is valid for <strong>5 minutes</strong>.</p>
         <p>Best regards,<br/>Cognoscente Invented Pvt. Ltd. Team</p>
       `,
     };
 
-    transporter.sendMail(mailOptions)
-      .then(() => console.log("✅ OTP email sent to", user.email))
-      .catch(err => console.error("❌ Email send error:", err));
+    // ✅ Send email
+    await sgMail.send(msg);
+    console.log("✅ OTP email sent to", user.email);
+
+    return res.status(200).json({
+      msg: "OTP sent successfully",
+      email: user.email,
+    });
   } catch (err) {
-    console.error("OTP send error:", err);
-    res.status(500).json({ msg: "Failed to generate OTP", error: err.message });
+    console.error("❌ OTP send error:", err.response?.body || err.message);
+    return res.status(500).json({
+      msg: "Failed to send OTP",
+      error: err.response?.body?.errors?.[0]?.message || err.message,
+    });
   }
 };
+
 
 
 export const updateProfile = async (req, res) => {
