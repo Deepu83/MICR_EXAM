@@ -408,6 +408,110 @@ export const updateResult = async (req, res) => {
   }
 };
 
+// export const getStepDetailsByApplicationId = async (req, res) => {
+//   try {
+//     const { applicationId } = req.params;
+
+//     if (!applicationId) {
+//       return res.status(400).json({ msg: "Application ID is required" });
+//     }
+
+//     console.log("🔹 Searching for user with applicationId:", applicationId);
+
+//     // ✅ Find the user whose progression contains this applicationId
+//     const user = await User.findOne({
+//       $or: [
+//         { "progression.step1.papers.paper1.applicationId": applicationId },
+//         { "progression.step1.papers.paper2.applicationId": applicationId },
+//         { "progression.step2.applicationId": applicationId },
+//         { "progression.step3.partA.applicationId": applicationId },
+//         { "progression.step3.partB.applicationId": applicationId },
+//       ],
+//     });
+
+//     if (!user) {
+//       console.log("❌ User not found");
+//       return res.status(404).json({ msg: "No user found for this application ID" });
+//     }
+
+//     const progression = user.progression.toObject ? user.progression.toObject() : user.progression;
+
+//     // Recursive search function
+//     const findStep = (obj, parentKeys = []) => {
+//       for (const key in obj) {
+//         if (obj.hasOwnProperty(key)) {
+//           const val = obj[key];
+//           if (val && typeof val === "object") {
+//             if (val.applicationId === applicationId) {
+//               let stepName = "";
+//               if (parentKeys[0] === "step1") {
+//                 stepName =
+//                   "Step 1 - " +
+//                   (parentKeys[1] === "papers" ? (key === "paper1" ? "Paper 1" : "Paper 2") : key);
+//               } else if (parentKeys[0] === "step2") {
+//                 stepName = "Step 2";
+//               } else if (parentKeys[0] === "step3") {
+//                 stepName = parentKeys[1] === "partA" ? "Step 3A" : "Step 3B";
+//               } else {
+//                 stepName = [...parentKeys, key].join(" - ");
+//               }
+//               return { stepName, stepDetails: val };
+//             }
+//             const result = findStep(val, [...parentKeys, key]);
+//             if (result) return result;
+//           }
+//         }
+//       }
+//       return null;
+//     };
+
+//     const stepInfo = findStep(progression);
+
+//     if (!stepInfo) {
+//       return res.status(404).json({ msg: "Step not found for this application ID" });
+//     }
+
+//     console.log("✅ Step found:", stepInfo.stepName, stepInfo.stepDetails.status);
+
+//     const registration = stepInfo.stepDetails.status === "passed" ? true : null;
+
+//     // 🧠 Determine eligibility or completion messages
+//     let message = "Step details fetched successfully";
+
+//     const step1Passed = progression.step1?.overallStatus === "passed";
+//     const step2Passed = progression.step2?.status === "passed";
+//     const step3APassed = progression.step3?.partA?.status === "passed";
+//     const step3BPassed = progression.step3?.partB?.status === "passed";
+
+//     // 🏁 Check if all steps are completed
+//     if (step1Passed && step2Passed && step3APassed && step3BPassed) {
+//       message = "You have already cleared all steps";
+//     } else if (step1Passed && !step2Passed) {
+//       message = "You are eligible for Step 2";
+//     } else if (step2Passed && !step3APassed) {
+//       message = "You are eligible for Step 3A";
+//     } else if (step3APassed && !step3BPassed) {
+//       message = "You are eligible for Step 3B";
+//     }
+
+//     res.status(200).json({
+//       msg: message,
+//       stepName: stepInfo.stepName,
+//       user: { name: user.name, email: user.email },
+//       applicationId,
+//       stepDetails: {
+//         status: stepInfo.stepDetails.status || "not_started",
+//         completedDate: stepInfo.stepDetails.completedDate || null,
+//       },
+//       registration,
+//     });
+//   } catch (err) {
+//     console.error("❌ Server Error:", err);
+//     res.status(500).json({ msg: "Server error", error: err.message });
+//   }
+// };
+
+
 export const getStepDetailsByApplicationId = async (req, res) => {
   try {
     const { applicationId } = req.params;
@@ -421,9 +525,11 @@ export const getStepDetailsByApplicationId = async (req, res) => {
     // ✅ Find the user whose progression contains this applicationId
     const user = await User.findOne({
       $or: [
+        { "progression.step1.applicationId": applicationId },
         { "progression.step1.papers.paper1.applicationId": applicationId },
         { "progression.step1.papers.paper2.applicationId": applicationId },
         { "progression.step2.applicationId": applicationId },
+        { "progression.step3.applicationId": applicationId },
         { "progression.step3.partA.applicationId": applicationId },
         { "progression.step3.partB.applicationId": applicationId },
       ],
@@ -436,7 +542,98 @@ export const getStepDetailsByApplicationId = async (req, res) => {
 
     const progression = user.progression.toObject ? user.progression.toObject() : user.progression;
 
-    // Recursive search function
+    // ✅ Case 1: Step 1 overall application
+    if (progression.step1?.applicationId === applicationId) {
+      console.log("✅ Step 1 overall application found");
+
+      const step1 = {
+        overallStatus: progression.step1?.overallStatus || "in_progress",
+        completedDate: progression.step1?.completedDate || null,
+        papers: [
+          progression.step1?.papers?.paper1
+            ? {
+                name: "Paper 1",
+                applicationId: progression.step1.papers.paper1.applicationId,
+                status: progression.step1.papers.paper1.status || "not_started",
+                completedDate: progression.step1.papers.paper1.completedDate || null,
+              }
+            : null,
+          progression.step1?.papers?.paper2
+            ? {
+                name: "Paper 2",
+                applicationId: progression.step1.papers.paper2.applicationId,
+                status: progression.step1.papers.paper2.status || "not_started",
+                completedDate: progression.step1.papers.paper2.completedDate || null,
+              }
+            : null,
+        ].filter(Boolean),
+      };
+
+       let message = "Step details fetched successfully";
+    const step1Passed = progression.step1?.overallStatus === "passed";
+    const step2Passed = progression.step2?.status === "passed";
+    const step3APassed = progression.step3?.partA?.status === "passed";
+    const step3BPassed = progression.step3?.partB?.status === "passed";
+
+    if (step1Passed && step2Passed && step3APassed && step3BPassed) {
+      message = "You have already cleared all steps";
+    } else if (step1Passed && !step2Passed) {
+      message = "You are eligible for Step 2";
+    } else if (step2Passed && !step3APassed) {
+      message = "You are eligible for Step 3A";
+    } else if (step3APassed && !step3BPassed) {
+      message = "You are eligible for Step 3B";
+    }
+      return res.status(200).json({
+        // msg: "Overall Step 1 application details fetched successfully",
+           msg: message,
+        user: { name: user.name, email: user.email },
+        applicationId,
+        overallStatus: step1.overallStatus,
+        step1,
+        registration: true,
+      });
+    }
+
+    // ✅ Case 2: Step 3 overall application
+    if (progression.step3?.applicationId === applicationId) {
+      console.log("✅ Step 3 overall application found");
+
+      const step3 = {
+        overallStatus: progression.step3?.overallStatus || "in_progress",
+        completedDate: progression.step3?.completedDate || null,
+        parts: [
+          progression.step3?.partA
+            ? {
+                name: "Part A",
+                applicationId: progression.step3.partA.applicationId,
+                status: progression.step3.partA.status || "not_started",
+                completedDate: progression.step3.partA.completedDate || null,
+              }
+            : null,
+          progression.step3?.partB
+            ? {
+                name: "Part B",
+                applicationId: progression.step3.partB.applicationId,
+                status: progression.step3.partB.status || "not_started",
+                completedDate: progression.step3.partB.completedDate || null,
+              }
+            : null,
+        ].filter(Boolean),
+      };
+
+      return res.status(200).json({
+        
+        msg: "Overall Step 3 application details fetched successfully",
+        user: { name: user.name, email: user.email },
+        applicationId,
+        overallStatus: step3.overallStatus,
+        step3,
+        registration: true,
+      });
+    }
+
+    // 🔍 Recursive search for inner step matches
     const findStep = (obj, parentKeys = []) => {
       for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
@@ -447,7 +644,11 @@ export const getStepDetailsByApplicationId = async (req, res) => {
               if (parentKeys[0] === "step1") {
                 stepName =
                   "Step 1 - " +
-                  (parentKeys[1] === "papers" ? (key === "paper1" ? "Paper 1" : "Paper 2") : key);
+                  (parentKeys[1] === "papers"
+                    ? key === "paper1"
+                      ? "Paper 1"
+                      : "Paper 2"
+                    : key);
               } else if (parentKeys[0] === "step2") {
                 stepName = "Step 2";
               } else if (parentKeys[0] === "step3") {
@@ -475,15 +676,13 @@ export const getStepDetailsByApplicationId = async (req, res) => {
 
     const registration = stepInfo.stepDetails.status === "passed" ? true : null;
 
-    // 🧠 Determine eligibility or completion messages
+    // 🧠 Eligibility logic
     let message = "Step details fetched successfully";
-
     const step1Passed = progression.step1?.overallStatus === "passed";
     const step2Passed = progression.step2?.status === "passed";
     const step3APassed = progression.step3?.partA?.status === "passed";
     const step3BPassed = progression.step3?.partB?.status === "passed";
 
-    // 🏁 Check if all steps are completed
     if (step1Passed && step2Passed && step3APassed && step3BPassed) {
       message = "You have already cleared all steps";
     } else if (step1Passed && !step2Passed) {
@@ -511,91 +710,6 @@ export const getStepDetailsByApplicationId = async (req, res) => {
   }
 };
 
-// export const getStepDetailsByApplicationId = async (req, res) => {
-//   try {
-//     const { applicationId } = req.params;
-
-//     if (!applicationId) {
-//       return res.status(400).json({ msg: "Application ID is required" });
-//     }
-
-//     console.log("🔹 Searching for user with applicationId:", applicationId);
-
-//     // ✅ Find the user whose progression contains this applicationId
-//     const user = await User.findOne({
-//       $or: [
-//         { "progression.step1.papers.paper1.applicationId": applicationId },
-//         { "progression.step1.papers.paper2.applicationId": applicationId },
-//         { "progression.step2.applicationId": applicationId },
-//         { "progression.step3.partA.applicationId": applicationId },
-//         { "progression.step3.partB.applicationId": applicationId },
-//       ],
-//     });
-
-//     if (!user) {
-//       console.log("❌ User not found");
-//       return res.status(404).json({ msg: "No user found for this application ID" });
-//     }
-
-//     console.log("✅ User found:", user.name, user.email);
-
-//     const progression = user.progression.toObject ? user.progression.toObject() : user.progression;
-
-//     // Recursive search function
-//     const findStep = (obj, parentKeys = []) => {
-//       for (const key in obj) {
-//         if (obj.hasOwnProperty(key)) {
-//           const val = obj[key];
-//           if (val && typeof val === "object") {
-//             if (val.applicationId === applicationId) {
-//               let stepName = "";
-//               if (parentKeys[0] === "step1") {
-//                 stepName = "Step 1 - " + (parentKeys[1] === "papers" ? (key === "paper1" ? "Paper 1" : "Paper 2") : key);
-//               } else if (parentKeys[0] === "step2") {
-//                 stepName = "Step 2";
-//               } else if (parentKeys[0] === "step3") {
-//                 stepName = parentKeys[1] === "partA" ? "Step 3A" : "Step 3B";
-//               } else {
-//                 stepName = [...parentKeys, key].join(" - ");
-//               }
-//               return { stepName, stepDetails: val };
-//             }
-//             const result = findStep(val, [...parentKeys, key]);
-//             if (result) return result;
-//           }
-//         }
-//       }
-//       return null;
-//     };
-
-//     const stepInfo = findStep(progression);
-
-//     if (!stepInfo) {
-//       console.log("❌ Step not found in progression");
-//       return res.status(404).json({ msg: "Step not found for this application ID" });
-//     }
-
-//     console.log("✅ Step found:", stepInfo.stepName, stepInfo.stepDetails.status);
-
-//     // ✅ Set registration true automatically if status is 'passed'
-//     const registration = stepInfo.stepDetails.status === "passed" ? true : null;
-
-//     res.status(200).json({
-//       msg: "Step details fetched successfully",
-//       stepName: stepInfo.stepName,
-//       user: { name: user.name, email: user.email },
-//       applicationId,
-//       stepDetails: {
-//         status: stepInfo.stepDetails.status || "not_started",
-//         completedDate: stepInfo.stepDetails.completedDate || null,
-//       },
-//       registration,
-//     });
-//   } catch (err) {
-//     console.error("❌ Server Error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
 
 export const getAdmitCard = async (req, res) => {
   try {
