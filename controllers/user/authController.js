@@ -601,105 +601,101 @@ export const adminMarkStepPassed = async (req, res) => {
     //   step3.partA = updatePaper(step3.partA);
     //   step3.partB = updatePaper(step3.partB);
     // }
-// ---------- STEP 3 ----------
-if (isOverallStep3) {
-  // ✅ Admin marks both parts together
-  for (const part of ["partA", "partB"]) {
-    if (!step3[part]) step3[part] = {};
-    step3[part].status = status;
-    step3[part].completedDate = now;
-  }
 
-  step3.overallStatus = status;
-  step3.completedDate = now;
-} else {
-  // ✅ Update only the part that matches this application
-  let updated = false;
+    // ---------- CURRENT LEVEL LOGIC ----------
+    // const partA = step3.partA?.status;
+    // const partB = step3.partB?.status;
 
-  if (step3.partA?.applicationId === applicationId) {
-    step3.partA = updatePaper(step3.partA);
-    updated = true;
-  }
+    // let currentLevel = 1;
 
-  if (step3.partB?.applicationId === applicationId) {
-    step3.partB = updatePaper(step3.partB);
-    updated = true;
-  }
+    // if (step1.overallStatus === "passed") currentLevel = 2;
 
-  // ✅ Ensure parts are open if Step 2 passed
-  if (step2.status === "passed") {
-    if (!step3.partA || step3.partA.status === "closed") {
-      step3.partA = step3.partA || {};
-      step3.partA.status = "open";
-    }
+    // if (step1.overallStatus === "passed" && step2.status === "passed")
+    //   currentLevel = 3;
 
-    if (!step3.partB || step3.partB.status === "closed") {
-      step3.partB = step3.partB || {};
-      step3.partB.status = "open";
-    }
-  }
+    // if (
+    //   step1.overallStatus === "passed" &&
+    //   step2.status === "passed" &&
+    //   step3.overallStatus === "passed"
+    // ) {
+    //   step3.overallStatus = "passed";
+    //   step3.completedDate = now;
+    //   currentLevel = 4;
+    //   step3.overallStatus=="passed"
+  
+    // } else if (
+    //   step1.overallStatus === "passed" &&
+    //   step2.overallStatus === "passed" &&
+    //   (partA === "failed" || partB === "failed" || partA === "open" || partB === "open")
+    // ) {
+    //   currentLevel = 3; // stay at 3 if any part failed or not completed
+    //   step3.overallStatus = "incomplete";
+    // }
 
-  // ✅ Determine overall Step 3 status dynamically
-  const partAStatus = step3.partA?.status;
-  const partBStatus = step3.partB?.status;
+    // // ---------- ALL STEPS COMPLETED ----------
+    // const allStepsCompleted =
+    //   step1.overallStatus === "passed" &&
+    //   step2.overallStatus === "passed" &&
+    //   step3.overallStatus === "passed";
 
-  if (partAStatus === "passed" && partBStatus === "passed") {
+    // user.progression.allStepsCompleted = allStepsCompleted;
+    // user.progression.completionDate = allStepsCompleted ? now : null;
+    //  user.progression.allStepsCompleted = true;
+
+    // // ✅ Save progression
+    // user.progression.step1 = step1;
+    // user.progression.step2 = step2;
+    // user.progression.step3 = step3;
+    // user.progression.currentLevel = currentLevel;
+    
+    
+// ---------- CURRENT LEVEL LOGIC ----------
+const partA = step3.partA?.status;
+const partB = step3.partB?.status;
+
+let currentLevel = 1;
+
+if (step1.overallStatus === "passed") currentLevel = 2;
+
+if (step1.overallStatus === "passed" && step2.status === "passed") {
+  // Step 2 done → start Step 3
+  currentLevel = 3;
+
+  // 🧠 Handle detailed part-level logic
+  if (partA === "passed" && partB !== "passed") {
+    currentLevel = "3A";
+  } else if (partB === "passed" && partA !== "passed") {
+    currentLevel = "3B";
+  } else if (partA === "passed" && partB === "passed") {
+    currentLevel = 4;
     step3.overallStatus = "passed";
     step3.completedDate = now;
-  } else if (partAStatus === "failed" || partBStatus === "failed") {
-    step3.overallStatus = "failed";
-  } else if (partAStatus === "open" || partBStatus === "open") {
-    step3.overallStatus = "open";
-  } else {
+  } else if (
+    partA === "failed" ||
+    partB === "failed" ||
+    partA === "open" ||
+    partB === "open"
+  ) {
+    currentLevel = 3; // Stay on level 3 if incomplete or failed
     step3.overallStatus = "incomplete";
   }
 }
 
-    // ---------- CURRENT LEVEL LOGIC ----------
-    const partA = step3.partA?.status;
-    const partB = step3.partB?.status;
+// ---------- ALL STEPS COMPLETED ----------
+const allStepsCompleted =
+  step1.overallStatus === "passed" &&
+  step2.overallStatus === "passed" &&
+  step3.overallStatus === "passed";
 
-    let currentLevel = 1;
+user.progression.allStepsCompleted = allStepsCompleted;
+user.progression.completionDate = allStepsCompleted ? now : null;
 
-    if (step1.overallStatus === "passed") currentLevel = 2;
+// ✅ Save progression
+user.progression.step1 = step1;
+user.progression.step2 = step2;
+user.progression.step3 = step3;
+user.progression.currentLevel = currentLevel;
 
-    if (step1.overallStatus === "passed" && step2.status === "passed")
-      currentLevel = 3;
-
-    if (
-      step1.overallStatus === "passed" &&
-      step2.status === "passed" &&
-      step3.overallStatus === "passed"
-    ) {
-      step3.overallStatus = "passed";
-      step3.completedDate = now;
-      currentLevel = 4;
-      step3.overallStatus=="passed"
-  
-    } else if (
-      step1.overallStatus === "passed" &&
-      step2.overallStatus === "passed" &&
-      (partA === "failed" || partB === "failed" || partA === "open" || partB === "open")
-    ) {
-      currentLevel = 3; // stay at 3 if any part failed or not completed
-      step3.overallStatus = "incomplete";
-    }
-
-    // ---------- ALL STEPS COMPLETED ----------
-    const allStepsCompleted =
-      step1.overallStatus === "passed" &&
-      step2.overallStatus === "passed" &&
-      step3.overallStatus === "passed";
-
-    user.progression.allStepsCompleted = allStepsCompleted;
-    user.progression.completionDate = allStepsCompleted ? now : null;
-     user.progression.allStepsCompleted = true;
-
-    // ✅ Save progression
-    user.progression.step1 = step1;
-    user.progression.step2 = step2;
-    user.progression.step3 = step3;
-    user.progression.currentLevel = currentLevel;
 
     await user.save();
 

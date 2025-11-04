@@ -169,7 +169,7 @@ const Step3Schema = new mongoose.Schema({
 const ProgressionSchema = new mongoose.Schema({
   currentLevel: {
     type: mongoose.Schema.Types.Mixed, // allows both numbers and strings
-    enum: [0, 1, 2, 3, 4, "1A", "1B"], // 1A and 1B for partial Step 1 completion
+    enum: [0, 1, 2, 3, 4, "1A", "1B","3A","3B"], // 1A and 1B for partial Step 1 completion
     default: 0,
   },
   step1: { type: Step1Schema, default: () => ({}) },
