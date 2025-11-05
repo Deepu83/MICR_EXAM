@@ -12,11 +12,7 @@ const ExamRegistrationSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    // examId: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "Exam",
-    //   required: true,
-    // },
+   
     examId: {
       type: String,   // <- Change to string
       required: true,
@@ -78,8 +74,13 @@ const ExamRegistrationSchema = new mongoose.Schema(
       center10: { type: String },
       center11: { type: String },
     },
-    //
+    //add attemp
+    attemptNumber: {
+  type: Number,
+  default: 1,
+},
   },
+  
 
   //add center 
 

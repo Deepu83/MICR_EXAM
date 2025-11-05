@@ -99,10 +99,59 @@ export const verifyPaymentAndRegister = async (req, res) => {
     if (!user) return res.status(404).json({ msg: "User not found" });
 
     // ✅ Check if already registered
-    const existingReg = await ExamRegistration.findOne({ userId, examId });
-    if (existingReg) {
-      return res.status(400).json({ msg: "User already registered for this exam" });
-    }
+    // const existingReg = await ExamRegistration.findOne({ userId, examId });
+    // if (existingReg) {
+    //   return res.status(400).json({ msg: "User already registered for this exam" });
+    // }
+// ✅ Check previous registrations for the same exam
+// ✅ Improved existing registration + re-fill logic
+const lastReg = await ExamRegistration.findOne({ userId, examId }).sort({ createdAt: -1 });
+
+let allowRegistration = true;
+
+// Check progression status for the relevant step
+const getProgressionStatus = () => {
+  const prog = user.progression || {};
+  switch (examCode) {
+    case "1":
+    case "1A":
+      return prog.step1?.papers?.paper1?.status;
+    case "1B":
+      return prog.step1?.papers?.paper2?.status;
+    case "2":
+      return prog.step2?.status;
+    case "3":
+    case "3A":
+      return prog.step3?.partA?.status;
+    case "3B":
+      return prog.step3?.partB?.status;
+    default:
+      return null;
+  }
+};
+
+const progStatus = getProgressionStatus();
+const lastStatus = lastReg?.applicationInfo?.resultStatus || lastReg?.status || progStatus || "unknown";
+
+if (lastReg && lastReg.applicationInfo?.paymentStatus === "paid") {
+  if (lastStatus !== "failed") {
+    // only block if last attempt was not failed
+    allowRegistration = false;
+  }
+}
+
+// Block registration if not eligible
+if (!allowRegistration) {
+  return res.status(400).json({ msg: "User already registered for this exam" });
+}
+
+// ✅ Auto-increment attempt number
+let attemptNumber = 1;
+if (lastReg) {
+  attemptNumber = (lastReg.attemptNumber || 1) + 1;
+}
+
+//autoincreament 
 
     const currentYear = new Date().getFullYear();
 
@@ -190,6 +239,74 @@ export const verifyPaymentAndRegister = async (req, res) => {
 
       registrations.push(registration1, registration2);
     }
+//for 3
+// ✅ For combined Step 3 (3A + 3B)
+else if (examCode === "3") {
+  // Generate three unique application numbers
+  const appNum3A = await generateUniqueAppNumber(); // Step 3A
+  const appNum3B = await generateUniqueAppNumber(); // Step 3B
+  const appNumOverall3 = await generateUniqueAppNumber(); // Step 3 overall
+
+  // Save registration for Part A
+  const registration3A = new ExamRegistration({
+    applicationNumber: appNum3A,
+    userId: new mongoose.Types.ObjectId(userId),
+    examId,
+    applicationInfo: {
+      examDate,
+      paymentAmount,
+      currency: currency || "INR",
+      paymentMode: "Razorpay",
+      transactionId: payment_id,
+      country: country || "India",
+      remarks: remarks || "",
+      paymentStatus: "paid",
+    },
+    centers,
+  });
+
+  // Save registration for Part B
+  const registration3B = new ExamRegistration({
+    applicationNumber: appNum3B,
+    userId: new mongoose.Types.ObjectId(userId),
+    examId,
+    applicationInfo: {
+      examDate,
+      paymentAmount,
+      currency: currency || "INR",
+      paymentMode: "Razorpay",
+      transactionId: payment_id,
+      country: country || "India",
+      remarks: remarks || "",
+      paymentStatus: "paid",
+    },
+    centers,
+  });
+
+  // Save both registrations
+  await registration3A.save();
+  await registration3B.save();
+
+  // ✅ Update progression for Step 3
+  user.progression = user.progression || {};
+  user.progression.step3 = user.progression.step3 || {};
+
+  user.progression.step3.partA = {
+    applicationId: appNum3A,
+    status: "submitted",
+  };
+
+  user.progression.step3.partB = {
+    applicationId: appNum3B,
+    status: "submitted",
+  };
+
+  user.progression.step3.applicationId = appNumOverall3;
+  user.progression.step3.overallStatus = "filled";
+
+  registrations.push(registration3A, registration3B);
+}
+///
 
     // ✅ For single-paper exam codes
     else if (["1A", "1B", "2", "3A", "3B"].includes(examCode)) {
@@ -223,6 +340,14 @@ export const verifyPaymentAndRegister = async (req, res) => {
         case "1A":
           user.progression.step1 = user.progression.step1 || {};
           user.progression.step1.papers = user.progression.step1.papers || {};
+
+          
+  // 🧩 Re-fillup logic for Paper 1 if failed
+  if (user.progression.step1.papers.paper1?.status === "failed") {
+    console.log("Re-fillup for Step 1 Paper 1");
+    user.progression.step1.papers.paper1 = {};
+  }
+
           user.progression.step1.papers.paper1 = {
             paid: true,
             paymentId: payment_id,
@@ -241,6 +366,11 @@ export const verifyPaymentAndRegister = async (req, res) => {
         case "1B":
           user.progression.step1 = user.progression.step1 || {};
           user.progression.step1.papers = user.progression.step1.papers || {};
+
+            if (user.progression.step1.papers.paper2?.status === "failed") {
+    console.log("Re-fillup for Step 1 Paper 2");
+    user.progression.step1.papers.paper2 = {};
+  }
           user.progression.step1.papers.paper2 = {
             paid: true,
             paymentId: payment_id,
@@ -258,6 +388,10 @@ export const verifyPaymentAndRegister = async (req, res) => {
           break;
 
         case "2":
+           if (user.progression.step2?.status === "failed") {
+    console.log("Re-fillup for Step 2");
+    user.progression.step2 = {};
+  }
           user.progression.step2 = {
             applicationId: appNum,
             status: "submitted",
@@ -267,6 +401,11 @@ export const verifyPaymentAndRegister = async (req, res) => {
  
         case "3A":
   user.progression.step3 = user.progression.step3 || {};
+    // 🧩 Re-fillup logic if failed in Step 3 Part A
+  if (user.progression.step3.partA?.status === "failed") {
+    console.log("Re-fillup for Step 3 Part A");
+    user.progression.step3.partA = {};
+  }
   user.progression.step3.partA = {
     applicationId: appNum,
     status: "submitted",
@@ -281,7 +420,14 @@ export const verifyPaymentAndRegister = async (req, res) => {
   break;
 
 case "3B":
+    // 🧩 Re-fillup logic if failed in Step 3 Part B
+  if (user.progression.step3.partB?.status === "failed") {
+    console.log("Re-fillup for Step 3 Part B");
+    user.progression.step3.partB = {};
+  }
   user.progression.step3 = user.progression.step3 || {};
+  
+
   user.progression.step3.partB = {
     applicationId: appNum,
     status: "submitted",
@@ -632,209 +778,6 @@ export const getStepDetailsByApplicationId = async (req, res) => {
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
-
-// export const getStepDetailsByApplicationId = async (req, res) => {
-//   try {
-//     const { applicationId } = req.params;
-
-//     if (!applicationId) {
-//       return res.status(400).json({ msg: "Application ID is required" });
-//     }
-
-//     console.log("🔹 Searching for user with applicationId:", applicationId);
-
-//     const user = await User.findOne({
-//       $or: [
-//         { "progression.step1.applicationId": applicationId },
-//         { "progression.step1.papers.paper1.applicationId": applicationId },
-//         { "progression.step1.papers.paper2.applicationId": applicationId },
-//         { "progression.step2.applicationId": applicationId },
-//         { "progression.step3.applicationId": applicationId },
-//         { "progression.step3.partA.applicationId": applicationId },
-//         { "progression.step3.partB.applicationId": applicationId },
-//       ],
-//     });
-
-//     if (!user) {
-//       console.log("❌ User not found");
-//       return res.status(404).json({ msg: "No user found for this application ID" });
-//     }
-
-//     const progression = user.progression.toObject ? user.progression.toObject() : user.progression;
-
-//     // ✅ Step 1 overall
-//     if (progression.step1?.applicationId === applicationId) {
-//       console.log("✅ Step 1 overall application found");
-
-//       const paper1 =
-//         progression.step1?.papers?.paper1 && {
-//           name: "Paper 1",
-//           applicationId: progression.step1.papers.paper1.applicationId,
-//           status: progression.step1.papers.paper1.status || "not_started",
-//           completedDate: progression.step1.papers.paper1.completedDate || null,
-//         };
-
-//       const paper2 =
-//         progression.step1?.papers?.paper2 && {
-//           name: "Paper 2",
-//           applicationId: progression.step1.papers.paper2.applicationId,
-//           status: progression.step1.papers.paper2.status || "not_started",
-//           completedDate: progression.step1.papers.paper2.completedDate || null,
-//         };
-
-//       let message = "Step details fetched successfully";
-//       const step1Passed = progression.step1?.overallStatus === "passed";
-//       const step2Passed = progression.step2?.status === "passed";
-//       const step3APassed = progression.step3?.partA?.status === "passed";
-//       const step3BPassed = progression.step3?.partB?.status === "passed";
-
-//       if (step1Passed && step2Passed && step3APassed && step3BPassed) {
-//         message = "You have already cleared all steps";
-//       } else if (step1Passed && !step2Passed) {
-//         message = "You are eligible for Step 2";
-//       } else if (step2Passed && !step3APassed) {
-//         message = "You are eligible for Step 3A";
-//       } else if (step3APassed && !step3BPassed) {
-//         message = "You are eligible for Step 3B";
-//       }
-
-//       return res.status(200).json({
-//         msg: message,
-//         stepName: "Step 1",
-//         user: { name: user.name, email: user.email },
-//         applicationId,
-//         stepDetails: {
-//           status: progression.step1?.overallStatus || "in_progress",
-//           completedDate: progression.step1?.completedDate || null,
-//           papers: [paper1, paper2].filter(Boolean),
-//         },
-//         registration: step1Passed,
-//       });
-//     }
-
-//     // ✅ Step 3 overall
-//     if (progression.step3?.applicationId === applicationId) {
-//       console.log("✅ Step 3 overall application found");
-
-//       const step3 = {
-//         overallStatus: progression.step3?.overallStatus || "in_progress",
-//         completedDate: progression.step3?.completedDate || null,
-//         parts: [
-//           progression.step3?.partA
-//             ? {
-//                 name: "Part A",
-//                 applicationId: progression.step3.partA.applicationId,
-//                 status: progression.step3.partA.status || "not_started",
-//                 completedDate: progression.step3.partA.completedDate || null,
-//               }
-//             : null,
-//           progression.step3?.partB
-//             ? {
-//                 name: "Part B",
-//                 applicationId: progression.step3.partB.applicationId,
-//                 status: progression.step3.partB.status || "not_started",
-//                 completedDate: progression.step3.partB.completedDate || null,
-//               }
-//             : null,
-//         ].filter(Boolean),
-//       };
-
-//       return res.status(200).json({
-//         msg: "Overall Step 3 application details fetched successfully",
-//         user: { name: user.name, email: user.email },
-//         applicationId,
-//         stepName: "Step 3",
-//         stepDetails: {
-//           status: step3.overallStatus,
-//           completedDate: step3.completedDate,
-//           parts: step3.parts,
-//         },
-//         registration: true,
-//       });
-//     }
-
-//     // 🔍 Recursive search for individual steps
-//     const findStep = (obj, parentKeys = []) => {
-//       for (const key in obj) {
-//         if (obj.hasOwnProperty(key)) {
-//           const val = obj[key];
-//           if (val && typeof val === "object") {
-//             if (val.applicationId === applicationId) {
-//               let name = "";
-//               if (parentKeys[0] === "step1" && parentKeys[1] === "papers") {
-//                 name = key === "paper1" ? "Paper 1" : "Paper 2";
-//               } else if (parentKeys[0] === "step2") {
-//                 name = "Step 2";
-//               } else if (parentKeys[0] === "step3") {
-//                 name = parentKeys[1] === "partA" ? "Step 3A" : "Step 3B";
-//               } else {
-//                 name = [...parentKeys, key].join(" - ");
-//               }
-//               return {
-//                 stepGroup:
-//                   parentKeys[0] === "step1"
-//                     ? "Step 1"
-//                     : parentKeys[0] === "step3"
-//                     ? "Step 3"
-//                     : name,
-//                 stepDetails: {
-//                   name,
-//                   applicationId: val.applicationId,
-//                   status: val.status || "not_started",
-//                   completedDate: val.completedDate || null,
-//                 },
-//               };
-//             }
-//             const result = findStep(val, [...parentKeys, key]);
-//             if (result) return result;
-//           }
-//         }
-//       }
-//       return null;
-//     };
-
-//     const stepInfo = findStep(progression);
-
-//     if (!stepInfo) {
-//       return res.status(404).json({ msg: "Step not found for this application ID" });
-//     }
-
-//     console.log("✅ Step found:", stepInfo.stepDetails.name);
-
-//     const registration = stepInfo.stepDetails.status === "passed";
-
-//     let message = "Step details fetched successfully";
-//     const step1Passed = progression.step1?.overallStatus === "passed";
-//     const step2Passed = progression.step2?.status === "passed";
-//     const step3APassed = progression.step3?.partA?.status === "passed";
-//     const step3BPassed = progression.step3?.partB?.status === "passed";
-
-//     if (step1Passed && step2Passed && step3APassed && step3BPassed) {
-//       message = "You have already cleared all steps";
-//     } else if (step1Passed && !step2Passed) {
-//       message = "You are eligible for Step 2";
-//     } else if (step2Passed && !step3APassed) {
-//       message = "You are eligible for Step 3A";
-//     } else if (step3APassed && !step3BPassed) {
-//       message = "You are eligible for Step 3B";
-//     }
-
-//     // ✅ Return individual step in array format
-//     return res.status(200).json({
-//       msg: message,
-//       stepName: stepInfo.stepGroup,
-//       user: { name: user.name, email: user.email },
-//       applicationId,
-//       stepDetails: {
-//         [stepInfo.stepGroup === "Step 1" ? "papers" : "parts"]: [stepInfo.stepDetails],
-//       },
-//       registration,
-//     });
-//   } catch (err) {
-//     console.error("❌ Server Error:", err);
-//     res.status(500).json({ msg: "Server error", error: err.message });
-//   }
-// };
 
 
 export const getAdmitCard = async (req, res) => {
