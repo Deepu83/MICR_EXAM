@@ -8,7 +8,12 @@ const examSchema = new mongoose.Schema({
     internationalAmount: Number, 
   amountPayable: Number,
   currency: String,
-  examCode: String,
+  // examCode: String,
+   examCode: {
+      type: String,
+      enum: ["1", "1A", "1B", "2", "3A", "3B"], // ✅ Only allow these codes
+      required: true,
+    },
   backendCode: String,
   requiredLevel: String,
 
