@@ -567,7 +567,6 @@ export const adminMarkStepPassed = async (req, res) => {
       step1.overallStatus = "passed";
        step1.allPapersPassed = true;  //
       step1.completedDate = now;
-      step2.status="open"
       if (step2.status !== "passed") step2.status = "open";
     } else if (p1 === "failed" || p2 === "failed") {
       step1.overallStatus = "failed";
