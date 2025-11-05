@@ -3,6 +3,13 @@ import Exam from "../models/Exam.js";
 // Create new exam
 export const createExam = async (req, res) => {
   try {
+    const {code}=req.body;
+    const existingExam=await Exam.findOne({code});
+    if(existingExam){
+      return res.status(400).json({ message: `Exam with code "${code}" already registered` });
+
+    }
+
     const exam = new Exam(req.body);
     await exam.save();
     res.status(201).json({ message: "Exam created successfully", exam });
@@ -10,6 +17,8 @@ export const createExam = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 
 // Get all exams
 export const getAllExams = async (req, res) => {

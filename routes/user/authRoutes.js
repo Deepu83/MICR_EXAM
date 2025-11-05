@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import {
   register, login, updateProfile, getAllUsers, getUserById, adminMarkStepPassed, requestProfileEdit,
-  approveProfileEdit,sendProfileUpdateOTP,getEditRequests,
+  approveProfileEdit,sendProfileUpdateOTP,getEditRequests,getDashboardStats,
 } from "../../controllers/user/authController.js";
 
 const router = express.Router();
@@ -75,6 +75,8 @@ router.put("/approve-edit/:userId", approveProfileEdit);
 router.get("/users", getAllUsers);
 router.get("/edit/requests", getEditRequests); // 👈 New route
 router.get("/users/:userId", getUserById);
+router.get("/dashboard-stats", getDashboardStats);
+
 
 router.put("/users/progression", adminMarkStepPassed);
 

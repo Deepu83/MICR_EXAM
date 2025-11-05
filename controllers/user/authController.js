@@ -11,6 +11,8 @@ import User from "../../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
+import Exam from "../../models/Exam.js"
+
 import { generateRegisterNo } from "../../utils/generateRegisterNo.js";
 import ExamRegistration from "../../models/ExamRegistration.js";
 
@@ -810,5 +812,40 @@ export const getEditRequests = async (req, res) => {
   } catch (err) {
     console.error("Fetch edit requests error:", err);
     res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};
+
+//get api for admin dashboard
+
+// assuming you’ve got a ProfileEdit model or field for edit requests
+
+export const getDashboardStats = async (req, res) => {
+  try {
+    // grab all the counts
+    const totalExams = await Exam.countDocuments();
+    const totalUsers = await User.countDocuments();
+    const totalRegistrations = await ExamRegistration.countDocuments();
+
+    // if you’ve got a separate model or field for edit requests
+    const totalEditRequests = await User.countDocuments({
+      "profileEditRequest.status": "pending", // adjust to your field name
+    });
+
+    // grab all exams too if you wanna list them
+    const exams = await Exam.find();
+
+    res.status(200).json({
+      message: "Dashboard stats fetched successfully ✅",
+      data: {
+        totalExams,
+        totalUsers,
+        totalRegistrations,
+        totalEditRequests,
+        exams,
+      },
+    });
+  } catch (err) {
+    console.error("Error fetching stats:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
