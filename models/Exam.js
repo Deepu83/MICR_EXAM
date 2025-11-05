@@ -18,14 +18,14 @@ const examSchema = new mongoose.Schema({
   gateClosingTime: { type: String },  // 🚪 Example: "09:30 AM"
 
 
-   papers: [
-    {
-      name: { type: String },        // e.g. "Paper 1"
-      title: { type: String },       // e.g. "Essential Radiology"
-      startTime: { type: String },   // e.g. "9:45 AM"
-      endTime: { type: String }      // e.g. "10:45 AM"
-    }
-  ],
+  //  papers: [
+  //   {
+  //     name: { type: String },        // e.g. "Paper 1"
+  //     title: { type: String },       // e.g. "Essential Radiology"
+  //     startTime: { type: String },   // e.g. "9:45 AM"
+  //     endTime: { type: String }      // e.g. "10:45 AM"
+  //   }
+  // ],
 
   centers: {
     type: Map,
@@ -54,6 +54,9 @@ const examSchema = new mongoose.Schema({
     instructions: [{ type: String }]
 
   }
-});
+  
+},
+{ strict: false } // ✅ <--- ALLOW EXTRA FIELDS
+);
 
 export default mongoose.model("Exam", examSchema);
