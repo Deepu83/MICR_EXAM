@@ -6,12 +6,13 @@ const examSchema = new mongoose.Schema({
   code: { type: String, required: true },
   title: String,
     internationalAmount: Number, 
-  amountPayable: Number,
+  // amountPayable: Number,
+  nationalAmount: Number,
   currency: String,
   // examCode: String,
    examCode: {
       type: String,
-      enum: ["1", "1A", "1B", "2", "3A", "3B"], // ✅ Only allow these codes
+      enum: ["1", "1A", "1B", "2","3", "3A", "3B"], // ✅ Only allow these codes
       required: true,
     },
   backendCode: String,
@@ -23,14 +24,7 @@ const examSchema = new mongoose.Schema({
   gateClosingTime: { type: String },  // 🚪 Example: "09:30 AM"
 
 
-  //  papers: [
-  //   {
-  //     name: { type: String },        // e.g. "Paper 1"
-  //     title: { type: String },       // e.g. "Essential Radiology"
-  //     startTime: { type: String },   // e.g. "9:45 AM"
-  //     endTime: { type: String }      // e.g. "10:45 AM"
-  //   }
-  // ],
+
 
   centers: {
     type: Map,
