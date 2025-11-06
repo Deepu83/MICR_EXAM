@@ -3,8 +3,9 @@
 import mongoose from "mongoose";
 
 const examSchema = new mongoose.Schema({
-  code: { type: String, required: true },
-  title: String,
+  code: { type: String, required: false },
+  // title: String,
+   subject: String,
     internationalAmount: Number, 
   // amountPayable: Number,
   nationalAmount: Number,
@@ -32,7 +33,8 @@ const examSchema = new mongoose.Schema({
       {
         id: String,
         name: String,
-        address: String
+        address: String,
+        pincode: { type: String },
       }
     ]
   },

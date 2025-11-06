@@ -2,8 +2,7 @@
 import cloudinary from "../../config/cloudinary.js";
 import fs from "fs";
 import path from "path";
-// import dotenv from "dotenv";
-// import sgMail from "@sendgrid/mail";
+
 import dotenv from "dotenv";
 // dotenv.config(); // Make sure env variables are loaded at the very top
 
@@ -194,54 +193,6 @@ export const login = async (req, res) => {
 };
 //otp 
 // ✅ Send OTP for profile update
-
-
-
-
-// Create transporter directly (no env vars)
-
-// export const sendProfileUpdateOTP = async (req, res) => {
-//   try {
-//     const { userId } = req.params;
-
-//     // ✅ Validate user
-//     const user = await User.findById(userId);
-//     if (!user) return res.status(404).json({ msg: "User not found" });
-
-//     // ✅ Generate random 6-digit OTP
-//     const otp = Math.floor(100000 + Math.random() * 900000);
-
-//     // ✅ Save OTP and expiry (5 min)
-//     user.otp = otp;
-//     user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
-//     await user.save();
-
-//     // ✅ Respond immediately
-//     res.status(200).json({ msg: "OTP generated successfully" });
-
-//     // ✅ Send email in background
-//     const mailOptions = {
-//       from: `"Cognoscente Invented Pvt. Ltd." <kandpaldeepak253@gmail.com>`,
-//       to: user.email,
-//       subject: "OTP Verification for Profile Update 🔐",
-//       html: `
-//         <p>Dear ${user.name},</p>
-//         <p>Your One-Time Password (OTP) for updating your profile is:</p>
-//         <h2>${otp}</h2>
-//         <p>This OTP is valid for 5 minutes.</p>
-//         <p>Best regards,<br/>Cognoscente Invented Pvt. Ltd. Team</p>
-//       `,
-//     };
-
-//     transporter.sendMail(mailOptions)
-//       .then(() => console.log("✅ OTP email sent to", user.email))
-//       .catch(err => console.error("❌ Email send error:", err));
-//   } catch (err) {
-//     console.error("OTP send error:", err);
-//     res.status(500).json({ msg: "Failed to generate OTP", error: err.message });
-//   }
-// };
-
 import sgMail from "@sendgrid/mail";
 
 
@@ -265,7 +216,7 @@ export const sendProfileUpdateOTP = async (req, res) => {
       to: user.email,
       from: {
         email: process.env.EMAIL_FROM, // email FIRST
-        name: "Cognoscente Invented Pvt. Ltd.",
+        name: "Welcome to MICR Exam",
       },
       subject: "OTP Verification for Profile Update 🔐",
       html: `
@@ -852,103 +803,6 @@ export const getDashboardStats = async (req, res) => {
 
 
 
-//passs exam with registration id 
-
-// export const updateExamStatusByRegisterNo = async (req, res) => {
-//   try {
-//     const { registerNo, step, status, paper, part } = req.body;
-
-//     const user = await User.findOne({ registerNo });
-//     if (!user) {
-//       return res.status(404).json({ msg: "User not found for given register number" });
-//     }
-
-//     // ensure progression object exists
-//     if (!user.progression) user.progression = {};
-//     const now = new Date();
-
-//     // ---------- STEP 1 ----------
-//     if (step === "step1") {
-//       user.progression.step1 = user.progression.step1 || { papers: {} };
-
-//       // ✅ Paper1 or Paper2 passed individually
-//       if (paper === "paper1" || paper === "paper2") {
-//         user.progression.step1.papers[paper] =
-//           user.progression.step1.papers[paper] || {};
-//         user.progression.step1.papers[paper].status = status;
-//         user.progression.step1.papers[paper].completedDate = now;
-//       }
-
-//       // ✅ Check if both papers passed
-//       const p1 = user.progression.step1.papers.paper1?.status === "passed";
-//       const p2 = user.progression.step1.papers.paper2?.status === "passed";
-//       if (p1 && p2) {
-//         user.progression.step1.overallStatus = "passed";
-//         user.progression.step1.completedDate = now;
-
-//         // Automatically open Step 2
-//         user.progression.step2 = user.progression.step2 || {};
-//         user.progression.step2.status = "open";
-//       }
-//     }
-
-//     // ---------- STEP 2 ----------
-//     else if (step === "step2") {
-//       user.progression.step2 = user.progression.step2 || {};
-//       user.progression.step2.status = status;
-//       user.progression.step2.completedDate = now;
-
-//       if (status === "passed") {
-//         // Automatically open Step 3 (Part A & B)
-//         user.progression.step3 = user.progression.step3 || {};
-//         user.progression.step3.partA = user.progression.step3.partA || {};
-//         user.progression.step3.partB = user.progression.step3.partB || {};
-//         user.progression.step3.partA.status = "open";
-//         user.progression.step3.partB.status="closed"
-//       }
-//     }
-
-//     // ---------- STEP 3 ----------
-// // ---------- STEP 3 ----------
-// else if (step === "step3") {
-//   user.progression.step3 = user.progression.step3 || {};
-//   user.progression.step3.partA = user.progression.step3.partA || {};
-//   user.progression.step3.partB = user.progression.step3.partB || {};
-
-//   // ✅ Update the current part (A or B)
-//   if (part === "partA" || part === "partB") {
-//     user.progression.step3[part].status = status;
-//     user.progression.step3[part].completedDate = now;
-//   }
-
-//   // ✅ If Part A passed → open Part B automatically
-//   if (part === "partA" && status === "passed") {
-//     user.progression.step3.partB.status = "open";
-//   }
-
-//   // ✅ If both parts are passed → mark Step 3 complete
-//   const aPassed = user.progression.step3.partA?.status === "passed";
-//   const bPassed = user.progression.step3.partB?.status === "passed";
-
-//   if (aPassed && bPassed) {
-//     user.progression.step3.allStepsCompleted = true;
-//     user.progression.step3.completionDate = now;
-//   }
-// }
-
-
-//     // ✅ Save changes
-//     await user.save();
-
-//     res.status(200).json({
-//       msg: `✅ ${step}${paper ? " - " + paper : part ? " - " + part : ""} marked as ${status} for ${registerNo}`,
-//       user,
-//     });
-//   } catch (error) {
-//     console.error("Error updating exam status:", error);
-//     res.status(500).json({ msg: "Internal server error" });
-//   }
-// };
 export const updateExamStatusByRegisterNo = async (req, res) => {
   try {
     const { registerNo, step, status, paper, part } = req.body;

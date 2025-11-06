@@ -5,7 +5,9 @@ const router = express.Router();
 
 router.post("/exams", createExam);
 router.get("/exams", getAllExams);
-router.get("/exams/:code", getExamByCode);
+// router.get("/exams/:code", getExamByCode);
+router.get("/exams/:examCode", getExamByCode);
+
 router.delete("/exams/:code",deleteExam);
 
 router.put("/exams/:code",updateExam);
