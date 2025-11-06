@@ -1072,6 +1072,7 @@ export const getAdmitCard = async (req, res) => {
         appProfile.documents?.photo?.url ||
         user.profile?.photo ||
         null,
+        signature: user.profile?.documents?.signature?.url || null,
   defaultImage: DEFAULT_IMAGE,
       // ✅ Cleaned Profile
       profile: cleanedProfile,
