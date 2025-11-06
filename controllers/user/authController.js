@@ -849,3 +849,247 @@ export const getDashboardStats = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+
+
+//passs exam with registration id 
+
+// export const updateExamStatusByRegisterNo = async (req, res) => {
+//   try {
+//     const { registerNo, step, status, paper, part } = req.body;
+
+//     const user = await User.findOne({ registerNo });
+//     if (!user) {
+//       return res.status(404).json({ msg: "User not found for given register number" });
+//     }
+
+//     // ensure progression object exists
+//     if (!user.progression) user.progression = {};
+//     const now = new Date();
+
+//     // ---------- STEP 1 ----------
+//     if (step === "step1") {
+//       user.progression.step1 = user.progression.step1 || { papers: {} };
+
+//       // ✅ Paper1 or Paper2 passed individually
+//       if (paper === "paper1" || paper === "paper2") {
+//         user.progression.step1.papers[paper] =
+//           user.progression.step1.papers[paper] || {};
+//         user.progression.step1.papers[paper].status = status;
+//         user.progression.step1.papers[paper].completedDate = now;
+//       }
+
+//       // ✅ Check if both papers passed
+//       const p1 = user.progression.step1.papers.paper1?.status === "passed";
+//       const p2 = user.progression.step1.papers.paper2?.status === "passed";
+//       if (p1 && p2) {
+//         user.progression.step1.overallStatus = "passed";
+//         user.progression.step1.completedDate = now;
+
+//         // Automatically open Step 2
+//         user.progression.step2 = user.progression.step2 || {};
+//         user.progression.step2.status = "open";
+//       }
+//     }
+
+//     // ---------- STEP 2 ----------
+//     else if (step === "step2") {
+//       user.progression.step2 = user.progression.step2 || {};
+//       user.progression.step2.status = status;
+//       user.progression.step2.completedDate = now;
+
+//       if (status === "passed") {
+//         // Automatically open Step 3 (Part A & B)
+//         user.progression.step3 = user.progression.step3 || {};
+//         user.progression.step3.partA = user.progression.step3.partA || {};
+//         user.progression.step3.partB = user.progression.step3.partB || {};
+//         user.progression.step3.partA.status = "open";
+//         user.progression.step3.partB.status="closed"
+//       }
+//     }
+
+//     // ---------- STEP 3 ----------
+// // ---------- STEP 3 ----------
+// else if (step === "step3") {
+//   user.progression.step3 = user.progression.step3 || {};
+//   user.progression.step3.partA = user.progression.step3.partA || {};
+//   user.progression.step3.partB = user.progression.step3.partB || {};
+
+//   // ✅ Update the current part (A or B)
+//   if (part === "partA" || part === "partB") {
+//     user.progression.step3[part].status = status;
+//     user.progression.step3[part].completedDate = now;
+//   }
+
+//   // ✅ If Part A passed → open Part B automatically
+//   if (part === "partA" && status === "passed") {
+//     user.progression.step3.partB.status = "open";
+//   }
+
+//   // ✅ If both parts are passed → mark Step 3 complete
+//   const aPassed = user.progression.step3.partA?.status === "passed";
+//   const bPassed = user.progression.step3.partB?.status === "passed";
+
+//   if (aPassed && bPassed) {
+//     user.progression.step3.allStepsCompleted = true;
+//     user.progression.step3.completionDate = now;
+//   }
+// }
+
+
+//     // ✅ Save changes
+//     await user.save();
+
+//     res.status(200).json({
+//       msg: `✅ ${step}${paper ? " - " + paper : part ? " - " + part : ""} marked as ${status} for ${registerNo}`,
+//       user,
+//     });
+//   } catch (error) {
+//     console.error("Error updating exam status:", error);
+//     res.status(500).json({ msg: "Internal server error" });
+//   }
+// };
+export const updateExamStatusByRegisterNo = async (req, res) => {
+  try {
+    const { registerNo, step, status, paper, part } = req.body;
+
+    const user = await User.findOne({ registerNo });
+    if (!user) {
+      return res.status(404).json({ msg: "User not found for given register number" });
+    }
+
+    // ensure progression object exists
+    if (!user.progression) user.progression = {};
+    const now = new Date();
+
+    // ---------- STEP 1 ----------
+    if (step === "step1") {
+      user.progression.step1 = user.progression.step1 || { papers: {} };
+
+      // ✅ Paper1 or Paper2 passed individually
+      if (paper === "paper1" || paper === "paper2") {
+        user.progression.step1.papers[paper] =
+          user.progression.step1.papers[paper] || {};
+        user.progression.step1.papers[paper].status = status;
+        user.progression.step1.papers[paper].completedDate = now;
+      }
+
+      // ✅ Check if both papers passed
+      const p1 = user.progression.step1.papers.paper1?.status === "passed";
+      const p2 = user.progression.step1.papers.paper2?.status === "passed";
+
+      if (p1 && p2) {
+        user.progression.step1.overallStatus = "passed";
+        user.progression.step1.completedDate = now;
+
+        // Automatically open Step 2
+        user.progression.step2 = user.progression.step2 || {};
+        user.progression.step2.status = "open";
+      }
+    }
+
+    // ---------- STEP 2 ----------
+    else if (step === "step2") {
+      user.progression.step2 = user.progression.step2 || {};
+      user.progression.step2.status = status;
+      user.progression.step2.completedDate = now;
+
+      if (status === "passed") {
+        // Automatically open Step 3 (Part A & B)
+        user.progression.step3 = user.progression.step3 || {};
+        user.progression.step3.partA = user.progression.step3.partA || {};
+        user.progression.step3.partB = user.progression.step3.partB || {};
+
+        user.progression.step3.partA.status = "open";
+        user.progression.step3.partB.status = "closed";
+      }
+    }
+
+    // ---------- STEP 3 ----------
+    else if (step === "step3") {
+      user.progression.step3 = user.progression.step3 || {};
+      user.progression.step3.partA = user.progression.step3.partA || {};
+      user.progression.step3.partB = user.progression.step3.partB || {};
+
+      // ✅ Update the current part (A or B)
+      if (part === "partA" || part === "partB") {
+        user.progression.step3[part].status = status;
+        user.progression.step3[part].completedDate = now;
+      }
+
+      // ✅ If Part A passed → open Part B automatically
+      if (part === "partA" && status === "passed") {
+        user.progression.step3.partB.status = "open";
+      }
+
+      // ✅ If both parts are passed → mark Step 3 complete
+      const aPassed = user.progression.step3.partA?.status === "passed";
+      const bPassed = user.progression.step3.partB?.status === "passed";
+
+      if (aPassed && bPassed) {
+        user.progression.step3.overallStatus = "passed";
+        user.progression.step3.allStepsCompleted = true;
+        user.progression.step3.completionDate = now;
+      }
+    }
+
+    // ======================================================
+    // ---------- CURRENT LEVEL LOGIC ----------
+    // ======================================================
+    const { step1 = {}, step2 = {}, step3 = {} } = user.progression;
+
+    const paperA = step1?.papers?.paper1?.status || null;
+    const paperB = step1?.papers?.paper2?.status || null;
+    const partA = step3?.partA?.status || null;
+    const partB = step3?.partB?.status || null;
+
+    let currentLevel = 1;
+
+    // 🧩 Step 1 logic
+    if (paperA === "passed" && paperB !== "passed") {
+      currentLevel = "1B"; // Paper1 passed → show 1B next
+    } else if (paperB === "passed" && paperA !== "passed") {
+      currentLevel = "1A"; // Paper2 passed → show 1A next
+    } else if (paperA === "passed" && paperB === "passed") {
+      step1.overallStatus = "passed";
+      currentLevel = 2; // Both done → move to Step 2
+    }
+
+    // 🧩 Step 2 and Step 3 logic
+    if (step1.overallStatus === "passed" && step2.status === "passed") {
+      if (partA === "passed" && partB === "passed") {
+        currentLevel = 4;
+        step3.overallStatus = "passed";
+        step3.completedDate = now;
+      } else if (partA === "passed" && partB !== "passed") {
+        currentLevel = "3B";
+      } else if (partB === "passed" && partA !== "passed") {
+        currentLevel = "3A";
+      } else {
+        currentLevel = 3; // still in progress
+      }
+    }
+
+    // ---------- ALL STEPS COMPLETED ----------
+    const allStepsCompleted =
+      step1.overallStatus === "passed" &&
+      step2.status === "passed" &&
+      step3.overallStatus === "passed";
+
+    user.progression.allStepsCompleted = allStepsCompleted;
+    user.progression.completionDate = allStepsCompleted ? now : null;
+    user.progression.currentLevel = currentLevel;
+
+    // ✅ Save all changes
+    await user.save();
+
+    res.status(200).json({
+      msg: `✅ ${step}${paper ? " - " + paper : part ? " - " + part : ""} marked as ${status} for ${registerNo}`,
+      currentLevel,
+      progression: user.progression,
+    });
+  } catch (error) {
+    console.error("❌ Error updating exam status:", error);
+    res.status(500).json({ msg: "Internal server error", error: error.message });
+  }
+};

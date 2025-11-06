@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import {
   register, login, updateProfile, getAllUsers, getUserById, adminMarkStepPassed, requestProfileEdit,
-  approveProfileEdit,sendProfileUpdateOTP,getEditRequests,getDashboardStats,
+  approveProfileEdit,sendProfileUpdateOTP,getEditRequests,getDashboardStats,updateExamStatusByRegisterNo
 } from "../../controllers/user/authController.js";
 
 const router = express.Router();
@@ -70,6 +70,7 @@ router.put(
 
 // 🟢 NEW: Admin approves/rejects edit request
 router.put("/approve-edit/:userId", approveProfileEdit);
+router.post("/update-status-by-register", updateExamStatusByRegisterNo);
 
 // ---------------- GET all users ----------------
 router.get("/users", getAllUsers);
