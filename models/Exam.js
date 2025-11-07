@@ -3,7 +3,9 @@
 import mongoose from "mongoose";
 
 const examSchema = new mongoose.Schema({
+    examName: { type: String, required: false },
   code: { type: String, required: false },
+
   // title: String,
    subject: String,
     internationalAmount: Number, 
