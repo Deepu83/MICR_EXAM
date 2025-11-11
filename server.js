@@ -10,6 +10,8 @@ import examApplicationRoutes from "./routes/examApplicationRoutes.js";
 import examRegistrationRoutes from "./routes/ExamRegistrationRoutes.js";
 
 
+import mockTestRoutes from "./routes/mockTestRoutes.js";
+
 
 
 dotenv.config();
@@ -23,7 +25,7 @@ app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api", examRoutes);
 app.use("/api/exam-applications", examApplicationRoutes);
 app.use("/api/registrations", examRegistrationRoutes);
-
+app.use("/api/mocktests", mockTestRoutes);
 // Sample test route
 app.get("/", (req, res) => res.send("🚀 Express + MongoDB running successfully!"));
 app.get("/health", (req, res) => {

@@ -6,10 +6,10 @@ const examSchema = new mongoose.Schema({
     examName: { type: String, required: false },
   code: { type: String, required: false },
 
-  // title: String,
+
    subject: String,
     internationalAmount: Number, 
-  // amountPayable: Number,
+  
   nationalAmount: Number,
   currency: String,
   // examCode: String,

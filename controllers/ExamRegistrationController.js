@@ -781,6 +781,10 @@ export const getStepDetailsByApplicationId = async (req, res) => {
 
 
 
+
+
+//add exam
+import Exam from "../models/Exam.js"
 export const getAdmitCard = async (req, res) => {
   try {
     const { applicationId } = req.params;
