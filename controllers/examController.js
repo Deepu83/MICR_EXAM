@@ -116,12 +116,16 @@ export const getExamByCode = async (req, res) => {
 // ✅ Update exam by code
 export const updateExam = async (req, res) => {
   try {
-    const exam = await Exam.findOneAndUpdate(
-      { examcode: req.params.examcode },
+    const exam = await Exam.findByIdAndUpdate(
+      req.params.id,   // ✅ update by _id
       req.body,
       { new: true, runValidators: true }
     );
-    if (!exam) return res.status(404).json({ message: "Exam not found" });
+
+    if (!exam) {
+      return res.status(404).json({ message: "Exam not found" });
+    }
+
     res.status(200).json({ message: "Exam updated successfully", exam });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -130,16 +134,21 @@ export const updateExam = async (req, res) => {
 
 
 
+
 // ✅ Delete exam by code
+
 export const deleteExam = async (req, res) => {
   try {
-    const exam = await Exam.findOneAndDelete({ examcode: req.params.examcode });
-    if (!exam) return res.status(404).json({ message: "Exam not found" });
+    const exam = await Exam.findByIdAndDelete(req.params.id); // ✅ delete by _id
+    if (!exam) {
+      return res.status(404).json({ message: "Exam not found" });
+    }
     res.status(200).json({ message: "Exam deleted successfully", exam });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 
 

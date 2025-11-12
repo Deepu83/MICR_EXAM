@@ -9,9 +9,10 @@ router.get("/desktop", getExamDashboardStats);
 router.get("/exams/:examCode", getExamByCode);
 router.get("/count", getExamRegistrationCount);
 
-router.delete("/exams/:examCode",deleteExam);
+// router.delete("/exams/:examCode",deleteExam);
+router.delete("/exams/:id", deleteExam);
 
-router.put("/exams/:code",updateExam);
+router.put("/exams/:id",updateExam);
 
 
 
