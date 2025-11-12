@@ -17,15 +17,36 @@ export const createExam = async (req, res) => {
 
 
 // Get all exams
+// export const getAllExams = async (req, res) => {
+//   try {
+//     const exams = await Exam.find();
+//     res.status(200).json(exams);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 export const getAllExams = async (req, res) => {
   try {
     const exams = await Exam.find();
-    res.status(200).json(exams);
+
+    // ✅ Total exams
+    const totalExams = exams.length;
+
+    // ✅ Active exams (assuming status is at root level)
+    const activeExams = exams.filter(
+      exam => exam?.status?.toLowerCase() === "active"
+    ).length;
+
+    res.status(200).json({
+      totalExams,
+      activeExams,
+      exams, // full list of exams
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 
 
@@ -136,7 +157,7 @@ export const getExamDashboardStats = async (req, res) => {
 
     // ✅ Active Exams (check nested path details.stats.status)
     const activeExams = exams.filter(
-      exam => exam?.details?.stats?.status?.toLowerCase() === "active"
+      exam => exam?.status?.toLowerCase() === "active"
     ).length;
 
     // ✅ Average Questions (parse from nested stats)
