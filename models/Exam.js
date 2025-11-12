@@ -40,6 +40,7 @@ const examSchema = new mongoose.Schema({
       }
     ]
   },
+
   // ✅ Updated structure to match your screenshot
   details: {
     module: { type: String },
@@ -50,7 +51,7 @@ const examSchema = new mongoose.Schema({
       duration: { type: String },
       marks: { type: String },
       mode: { type: String },
-      status: { type: String }
+     
       //  status: {
       //   type: String,
       //   enum: ["Open", "active", "inactive"], // ✅ Allowed values only
@@ -63,7 +64,9 @@ const examSchema = new mongoose.Schema({
     instructions: [{ type: String }],
 
 
-  }, registrationCount: {
+  }, 
+   status: { type: String },
+  registrationCount: {
       type: Number,
       default: 0,
     },
