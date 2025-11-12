@@ -25,7 +25,7 @@
 | Module                     | Method | Endpoint                                      | Description |
 | -------------------------- | ------ | --------------------------------------------- | ------------ |
 | **Exam Registration**      | POST   | `/api/registrations/create-order`             | Create a new payment order before       registration |
-|                            | POST   | `/api/registrations/verify-payment`           | Verify payment and complete registration |
+|                            | POST   | `/api/registrations/verify-payment`           |Verify payment and complete registration |
 |                            | GET    | `/api/registrations/`                         | Get all exam registrations |
 |                            | GET    | `/api/registrations/:registrationId`          | Get registration details by registration ID |
 |                            | PUT    | `/api/registrations/result/:registrationId`   | Update exam result for a specific 
@@ -34,3 +34,8 @@
 
 
 ********************************************************************************************************************************
+Module            	Method	                 Endpoint	                                         Description
+|**Mock Test**    |  POST	|         |` /api/mocktest/create`|	                       Create a new mock test                  |
+|	GET	          |                   |`/api/mocktest`|	                         Get all mock tests (without correct answers)|
+|   GET	          |                   |`/api/mocktest/:id`|                    Get mock test by ID (without correct answers)|
+|	POST	      |                   |`/api/mocktest/submit`|           Submit mock test answers and get candidate score|

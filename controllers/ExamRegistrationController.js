@@ -54,6 +54,7 @@ export const createOrder = async (req, res) => {
 };
 
 
+import Exam from "../models/Exam.js";
 
 
 
@@ -98,60 +99,69 @@ export const verifyPaymentAndRegister = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    // ✅ Check if already registered
-    // const existingReg = await ExamRegistration.findOne({ userId, examId });
-    // if (existingReg) {
-    //   return res.status(400).json({ msg: "User already registered for this exam" });
-    // }
-// ✅ Check previous registrations for the same exam
-// ✅ Improved existing registration + re-fill logic
-const lastReg = await ExamRegistration.findOne({ userId, examId }).sort({ createdAt: -1 });
 
-let allowRegistration = true;
+    //add exam
+    // ✅ Fetch exam details
+    // const exam = await Exam.findOne({ backendCode: examId }); // or Exam.findById(examId) depending on your structure
+    console.log("Received examId:", examId, typeof examId);
 
-// Check progression status for the relevant step
-const getProgressionStatus = () => {
-  const prog = user.progression || {};
-  switch (examCode) {
-    case "1":
-    case "1A":
-      return prog.step1?.papers?.paper1?.status;
-    case "1B":
-      return prog.step1?.papers?.paper2?.status;
-    case "2":
-      return prog.step2?.status;
-    case "3":
-    case "3A":
-      return prog.step3?.partA?.status;
-    case "3B":
-      return prog.step3?.partB?.status;
-    default:
-      return null;
-  }
-};
+    if (!examId || typeof examId !== "string" || !examId.trim()) {
+      return res.status(400).json({ msg: "Invalid or missing examId" });
+    }
 
-const progStatus = getProgressionStatus();
-const lastStatus = lastReg?.applicationInfo?.resultStatus || lastReg?.status || progStatus || "unknown";
+    // Use correct query depending on what frontend sends:
+    const exam = await Exam.findById(examId);
 
-if (lastReg && lastReg.applicationInfo?.paymentStatus === "paid") {
-  if (lastStatus !== "failed") {
-    // only block if last attempt was not failed
-    allowRegistration = false;
-  }
-}
+    if (!exam) return res.status(404).json({ msg: "Exam not found" });
 
-// Block registration if not eligible
-if (!allowRegistration) {
-  return res.status(400).json({ msg: "User already registered for this exam" });
-}
+    // ✅ Improved existing registration + re-fill logic
+    const lastReg = await ExamRegistration.findOne({ userId, examId }).sort({ createdAt: -1 });
 
-// ✅ Auto-increment attempt number
-let attemptNumber = 1;
-if (lastReg) {
-  attemptNumber = (lastReg.attemptNumber || 1) + 1;
-}
+    let allowRegistration = true;
 
-//autoincreament 
+    // Check progression status for the relevant step
+    const getProgressionStatus = () => {
+      const prog = user.progression || {};
+      switch (examCode) {
+        case "1":
+        case "1A":
+          return prog.step1?.papers?.paper1?.status;
+        case "1B":
+          return prog.step1?.papers?.paper2?.status;
+        case "2":
+          return prog.step2?.status;
+        case "3":
+        case "3A":
+          return prog.step3?.partA?.status;
+        case "3B":
+          return prog.step3?.partB?.status;
+        default:
+          return null;
+      }
+    };
+
+    const progStatus = getProgressionStatus();
+    const lastStatus = lastReg?.applicationInfo?.resultStatus || lastReg?.status || progStatus || "unknown";
+
+    if (lastReg && lastReg.applicationInfo?.paymentStatus === "paid") {
+      if (lastStatus !== "failed") {
+        // only block if last attempt was not failed
+        allowRegistration = false;
+      }
+    }
+
+    // Block registration if not eligible
+    if (!allowRegistration) {
+      return res.status(400).json({ msg: "User already registered for this exam" });
+    }
+
+    // ✅ Auto-increment attempt number
+    let attemptNumber = 1;
+    if (lastReg) {
+      attemptNumber = (lastReg.attemptNumber || 1) + 1;
+    }
+
+    //autoincreament 
 
     const currentYear = new Date().getFullYear();
 
@@ -161,7 +171,7 @@ if (lastReg) {
       while (!isUnique) {
         const randomDigits = Math.floor(100 + Math.random() * 900);
         // appNum = `EXAM${currentYear}-${randomDigits}`;
-         appNum = `EXAM${currentYear}0${randomDigits}`;
+        appNum = `EXAM${currentYear}0${randomDigits}`;
         const exists = await ExamRegistration.findOne({ applicationNumber: appNum });
         if (!exists) isUnique = true;
       }
@@ -182,6 +192,32 @@ if (lastReg) {
         applicationNumber: appNum1,
         userId: new mongoose.Types.ObjectId(userId),
         examId,
+examDetails: {
+  _id: exam._id,
+  subject: exam.subject,
+  internationalAmount: exam.internationalAmount,
+  nationalAmount: exam.nationalAmount,
+  currency: exam.currency,
+  examCode: exam.examCode,
+  backendCode: exam.backendCode,
+  paperMedium: exam.paperMedium,
+  dateOfExam: exam.dateOfExam,
+  breakTime: exam.breakTime,
+  gateClosingTime: exam.gateClosingTime,
+  centers: exam.centers,
+  details: exam.details,
+  stats: exam.stats,
+  instructions: exam.instructions,
+  requiredLevel: exam.requiredLevel,
+  eligibilityCriteria: exam.eligibilityCriteria,
+  status: exam.status,
+     centers: exam.centers || {},
+  details: exam.details || {},
+  instructions: exam.instructions || [],
+  stats: exam.stats || {},
+},
+
+        
         applicationInfo: {
           examDate,
           paymentAmount,
@@ -199,6 +235,33 @@ if (lastReg) {
         applicationNumber: appNum2,
         userId: new mongoose.Types.ObjectId(userId),
         examId,
+
+       
+        examDetails: {
+  _id: exam._id,
+  subject: exam.subject,
+  internationalAmount: exam.internationalAmount,
+  nationalAmount: exam.nationalAmount,
+  currency: exam.currency,
+  examCode: exam.examCode,
+  backendCode: exam.backendCode,
+  paperMedium: exam.paperMedium,
+  dateOfExam: exam.dateOfExam,
+  breakTime: exam.breakTime,
+  gateClosingTime: exam.gateClosingTime,
+  centers: exam.centers,
+  details: exam.details,
+  stats: exam.stats,
+  instructions: exam.instructions,
+  requiredLevel: exam.requiredLevel,
+  eligibilityCriteria: exam.eligibilityCriteria,
+  status: exam.status,
+     centers: exam.centers || {},
+  details: exam.details || {},
+  instructions: exam.instructions || [],
+  stats: exam.stats || {},
+},
+
         applicationInfo: {
           examDate,
           paymentAmount,
@@ -211,7 +274,7 @@ if (lastReg) {
         },
 
         //add 
-                centers,
+        centers,
       });
 
       // Save both registrations
@@ -239,74 +302,126 @@ if (lastReg) {
 
       registrations.push(registration1, registration2);
     }
-//for 3
-// ✅ For combined Step 3 (3A + 3B)
-else if (examCode === "3") {
-  // Generate three unique application numbers
-  const appNum3A = await generateUniqueAppNumber(); // Step 3A
-  const appNum3B = await generateUniqueAppNumber(); // Step 3B
-  const appNumOverall3 = await generateUniqueAppNumber(); // Step 3 overall
+    //for 3
+    // ✅ For combined Step 3 (3A + 3B)
+    else if (examCode === "3") {
+      // Generate three unique application numbers
+      const appNum3A = await generateUniqueAppNumber(); // Step 3A
+      const appNum3B = await generateUniqueAppNumber(); // Step 3B
+      const appNumOverall3 = await generateUniqueAppNumber(); // Step 3 overall
 
-  // Save registration for Part A
-  const registration3A = new ExamRegistration({
-    applicationNumber: appNum3A,
-    userId: new mongoose.Types.ObjectId(userId),
-    examId,
-    applicationInfo: {
-      examDate,
-      paymentAmount,
-      currency: currency || "INR",
-      paymentMode: "Razorpay",
-      transactionId: payment_id,
-      country: country || "India",
-      remarks: remarks || "",
-      paymentStatus: "paid",
-    },
-    centers,
-  });
+      // Save registration for Part A
+      const registration3A = new ExamRegistration({
+        applicationNumber: appNum3A,
+        userId: new mongoose.Types.ObjectId(userId),
+        examId,
 
-  // Save registration for Part B
-  const registration3B = new ExamRegistration({
-    applicationNumber: appNum3B,
-    userId: new mongoose.Types.ObjectId(userId),
-    examId,
-    applicationInfo: {
-      examDate,
-      paymentAmount,
-      currency: currency || "INR",
-      paymentMode: "Razorpay",
-      transactionId: payment_id,
-      country: country || "India",
-      remarks: remarks || "",
-      paymentStatus: "paid",
-    },
-    centers,
-  });
+      
+        examDetails: {
+  _id: exam._id,
+  subject: exam.subject,
+  internationalAmount: exam.internationalAmount,
+  nationalAmount: exam.nationalAmount,
+  currency: exam.currency,
+  examCode: exam.examCode,
+  backendCode: exam.backendCode,
+  paperMedium: exam.paperMedium,
+  dateOfExam: exam.dateOfExam,
+  breakTime: exam.breakTime,
+  gateClosingTime: exam.gateClosingTime,
+  centers: exam.centers,
+  details: exam.details,
+  stats: exam.stats,
+  instructions: exam.instructions,
+  requiredLevel: exam.requiredLevel,
+  eligibilityCriteria: exam.eligibilityCriteria,
+  status: exam.status,
+     centers: exam.centers || {},
+  details: exam.details || {},
+  instructions: exam.instructions || [],
+  stats: exam.stats || {},
+},
 
-  // Save both registrations
-  await registration3A.save();
-  await registration3B.save();
+        applicationInfo: {
+          examDate,
+          paymentAmount,
+          currency: currency || "INR",
+          paymentMode: "Razorpay",
+          transactionId: payment_id,
+          country: country || "India",
+          remarks: remarks || "",
+          paymentStatus: "paid",
+        },
+        centers,
+      });
 
-  // ✅ Update progression for Step 3
-  user.progression = user.progression || {};
-  user.progression.step3 = user.progression.step3 || {};
+      // Save registration for Part B
+      const registration3B = new ExamRegistration({
+        applicationNumber: appNum3B,
+        userId: new mongoose.Types.ObjectId(userId),
+        examId,
+           examDetail: {
+  _id: exam._id,
+  subject: exam.subject,
+  internationalAmount: exam.internationalAmount,
+  nationalAmount: exam.nationalAmount,
+  currency: exam.currency,
+  examCode: exam.examCode,
+  backendCode: exam.backendCode,
+  paperMedium: exam.paperMedium,
+  dateOfExam: exam.dateOfExam,
+  breakTime: exam.breakTime,
+  gateClosingTime: exam.gateClosingTime,
+  centers: exam.centers,
+  details: exam.details,
+  stats: exam.stats,
+  instructions: exam.instructions,
+  requiredLevel: exam.requiredLevel,
+  eligibilityCriteria: exam.eligibilityCriteria,
+  status: exam.status,
+   centers: exam.centers || {},
+  details: exam.details || {},
+  instructions: exam.instructions || [],
+  stats: exam.stats || {},
+},
 
-  user.progression.step3.partA = {
-    applicationId: appNum3A,
-    status: "submitted",
-  };
+        applicationInfo: {
+          examDate,
+          paymentAmount,
+          currency: currency || "INR",
+          paymentMode: "Razorpay",
+          transactionId: payment_id,
+          country: country || "India",
+          remarks: remarks || "",
+          paymentStatus: "paid",
+        },
+        centers,
+      });
 
-  user.progression.step3.partB = {
-    applicationId: appNum3B,
-    status: "submitted",
-  };
+      // Save both registrations
+      await registration3A.save();
+      await registration3B.save();
 
-  user.progression.step3.applicationId = appNumOverall3;
-  user.progression.step3.overallStatus = "filled";
+      // ✅ Update progression for Step 3
+      user.progression = user.progression || {};
+      user.progression.step3 = user.progression.step3 || {};
 
-  registrations.push(registration3A, registration3B);
-}
-///
+      user.progression.step3.partA = {
+        applicationId: appNum3A,
+        status: "submitted",
+      };
+
+      user.progression.step3.partB = {
+        applicationId: appNum3B,
+        status: "submitted",
+      };
+
+      user.progression.step3.applicationId = appNumOverall3;
+      user.progression.step3.overallStatus = "filled";
+
+      registrations.push(registration3A, registration3B);
+    }
+    ///
 
     // ✅ For single-paper exam codes
     else if (["1A", "1B", "2", "3A", "3B"].includes(examCode)) {
@@ -316,6 +431,33 @@ else if (examCode === "3") {
         applicationNumber: appNum,
         userId: new mongoose.Types.ObjectId(userId),
         examId,
+
+   
+        examDetails: {
+  _id: exam._id,
+  subject: exam.subject,
+  internationalAmount: exam.internationalAmount,
+  nationalAmount: exam.nationalAmount,
+  currency: exam.currency,
+  examCode: exam.examCode,
+  backendCode: exam.backendCode,
+  paperMedium: exam.paperMedium,
+  dateOfExam: exam.dateOfExam,
+  breakTime: exam.breakTime,
+  gateClosingTime: exam.gateClosingTime,
+  centers: exam.centers,
+  details: exam.details,
+  stats: exam.stats,
+  instructions: exam.instructions,
+  requiredLevel: exam.requiredLevel,
+  eligibilityCriteria: exam.eligibilityCriteria,
+  status: exam.status,
+   centers: exam.centers || {},
+  details: exam.details || {},
+  instructions: exam.instructions || [],
+  stats: exam.stats || {},
+},
+
         applicationInfo: {
           examDate,
           paymentAmount,
@@ -328,7 +470,7 @@ else if (examCode === "3") {
         },
 
         //add 
-                centers,
+        centers,
       });
 
       await registration.save();
@@ -341,12 +483,12 @@ else if (examCode === "3") {
           user.progression.step1 = user.progression.step1 || {};
           user.progression.step1.papers = user.progression.step1.papers || {};
 
-          
-  // 🧩 Re-fillup logic for Paper 1 if failed
-  if (user.progression.step1.papers.paper1?.status === "failed") {
-    console.log("Re-fillup for Step 1 Paper 1");
-    user.progression.step1.papers.paper1 = {};
-  }
+
+          // 🧩 Re-fillup logic for Paper 1 if failed
+          if (user.progression.step1.papers.paper1?.status === "failed") {
+            console.log("Re-fillup for Step 1 Paper 1");
+            user.progression.step1.papers.paper1 = {};
+          }
 
           user.progression.step1.papers.paper1 = {
             paid: true,
@@ -356,21 +498,21 @@ else if (examCode === "3") {
             status: "submitted",
           };
 
-            if (user.progression.step3.partA && user.progression.step3.partB) {
-    const appNumOverall3 = await generateUniqueAppNumber();
-    user.progression.step3.applicationId = appNumOverall3;
-    user.progression.step3.overallStatus = "submitted";
-  }
+          if (user.progression.step3.partA && user.progression.step3.partB) {
+            const appNumOverall3 = await generateUniqueAppNumber();
+            user.progression.step3.applicationId = appNumOverall3;
+            user.progression.step3.overallStatus = "submitted";
+          }
           break;
 
         case "1B":
           user.progression.step1 = user.progression.step1 || {};
           user.progression.step1.papers = user.progression.step1.papers || {};
 
-            if (user.progression.step1.papers.paper2?.status === "failed") {
-    console.log("Re-fillup for Step 1 Paper 2");
-    user.progression.step1.papers.paper2 = {};
-  }
+          if (user.progression.step1.papers.paper2?.status === "failed") {
+            console.log("Re-fillup for Step 1 Paper 2");
+            user.progression.step1.papers.paper2 = {};
+          }
           user.progression.step1.papers.paper2 = {
             paid: true,
             paymentId: payment_id,
@@ -379,73 +521,82 @@ else if (examCode === "3") {
             status: "submitted",
           };
 
-           // ✅ If both partA and partB exist, create overall Step 3 ID
-  if (user.progression.step3.partA && user.progression.step3.partB) {
-    const appNumOverall3 = await generateUniqueAppNumber();
-    user.progression.step3.applicationId = appNumOverall3;
-    user.progression.step3.overallStatus = "submitted";
-  }
+          // ✅ If both partA and partB exist, create overall Step 3 ID
+          if (user.progression.step3.partA && user.progression.step3.partB) {
+            const appNumOverall3 = await generateUniqueAppNumber();
+            user.progression.step3.applicationId = appNumOverall3;
+            user.progression.step3.overallStatus = "submitted";
+          }
           break;
 
         case "2":
-           if (user.progression.step2?.status === "failed") {
-    console.log("Re-fillup for Step 2");
-    user.progression.step2 = {};
-  }
+          if (user.progression.step2?.status === "failed") {
+            console.log("Re-fillup for Step 2");
+            user.progression.step2 = {};
+          }
           user.progression.step2 = {
             applicationId: appNum,
             status: "submitted",
           };
           break;
 
- 
+
         case "3A":
-  user.progression.step3 = user.progression.step3 || {};
-    // 🧩 Re-fillup logic if failed in Step 3 Part A
-  if (user.progression.step3.partA?.status === "failed") {
-    console.log("Re-fillup for Step 3 Part A");
-    user.progression.step3.partA = {};
-  }
-  user.progression.step3.partA = {
-    applicationId: appNum,
-    status: "submitted",
-  };
+          user.progression.step3 = user.progression.step3 || {};
+          // 🧩 Re-fillup logic if failed in Step 3 Part A
+          if (user.progression.step3.partA?.status === "failed") {
+            console.log("Re-fillup for Step 3 Part A");
+            user.progression.step3.partA = {};
+          }
+          user.progression.step3.partA = {
+            applicationId: appNum,
+            status: "submitted",
+          };
 
-  // ✅ If both partA and partB exist, create overall Step 3 ID
-  if (user.progression.step3.partA && user.progression.step3.partB) {
-    const appNumOverall3 = await generateUniqueAppNumber();
-    user.progression.step3.applicationId = appNumOverall3;
-    user.progression.step3.overallStatus = "submitted";
-  }
-  break;
+          // ✅ If both partA and partB exist, create overall Step 3 ID
+          if (user.progression.step3.partA && user.progression.step3.partB) {
+            const appNumOverall3 = await generateUniqueAppNumber();
+            user.progression.step3.applicationId = appNumOverall3;
+            user.progression.step3.overallStatus = "submitted";
+          }
+          break;
 
-case "3B":
-    // 🧩 Re-fillup logic if failed in Step 3 Part B
-  if (user.progression.step3.partB?.status === "failed") {
-    console.log("Re-fillup for Step 3 Part B");
-    user.progression.step3.partB = {};
-  }
-  user.progression.step3 = user.progression.step3 || {};
-  
+        case "3B":
+          // 🧩 Re-fillup logic if failed in Step 3 Part B
+          if (user.progression.step3.partB?.status === "failed") {
+            console.log("Re-fillup for Step 3 Part B");
+            user.progression.step3.partB = {};
+          }
+          user.progression.step3 = user.progression.step3 || {};
 
-  user.progression.step3.partB = {
-    applicationId: appNum,
-    status: "submitted",
-  };
 
-  // ✅ If both partA and partB exist, create overall Step 3 ID
-  if (user.progression.step3.partA && user.progression.step3.partB) {
-    const appNumOverall3 = await generateUniqueAppNumber();
-    user.progression.step3.applicationId = appNumOverall3;
-    user.progression.step3.overallStatus = "submitted";
-  }
-  break;
+          user.progression.step3.partB = {
+            applicationId: appNum,
+            status: "submitted",
+          };
+
+          // ✅ If both partA and partB exist, create overall Step 3 ID
+          if (user.progression.step3.partA && user.progression.step3.partB) {
+            const appNumOverall3 = await generateUniqueAppNumber();
+            user.progression.step3.applicationId = appNumOverall3;
+            user.progression.step3.overallStatus = "submitted";
+          }
+          break;
 
       }
     }
 
     // ✅ Save user progression
     await user.save();
+    //update registration count every time when registration 
+if (examId) {
+  try {
+    await Exam.findByIdAndUpdate(examId, { $inc: { registrationCount: 1 } });
+    console.log(`📈 Registration count incremented for exam ${examId}`);
+  } catch (updateErr) {
+    console.error("⚠️ Failed to update registration count:", updateErr);
+  }
+}
 
     res.status(200).json({
       msg: "Payment verified and registration completed successfully",
@@ -647,19 +798,19 @@ export const getStepDetailsByApplicationId = async (req, res) => {
         parts: [
           progression.step3?.partA
             ? {
-                name: "Part A",
-                applicationId: progression.step3.partA.applicationId,
-                status: progression.step3.partA.status || "not_started",
-                completedDate: progression.step3.partA.completedDate || null,
-              }
+              name: "Part A",
+              applicationId: progression.step3.partA.applicationId,
+              status: progression.step3.partA.status || "not_started",
+              completedDate: progression.step3.partA.completedDate || null,
+            }
             : null,
           progression.step3?.partB
             ? {
-                name: "Part B",
-                applicationId: progression.step3.partB.applicationId,
-                status: progression.step3.partB.status || "not_started",
-                completedDate: progression.step3.partB.completedDate || null,
-              }
+              name: "Part B",
+              applicationId: progression.step3.partB.applicationId,
+              status: progression.step3.partB.status || "not_started",
+              completedDate: progression.step3.partB.completedDate || null,
+            }
             : null,
         ].filter(Boolean),
       };
@@ -717,8 +868,8 @@ export const getStepDetailsByApplicationId = async (req, res) => {
                   parentKeys[0] === "step1"
                     ? "Step 1"
                     : parentKeys[0] === "step3"
-                    ? "Step 3"
-                    : name,
+                      ? "Step 3"
+                      : name,
                 stepDetails: {
                   name,
                   applicationId: val.applicationId,
@@ -784,7 +935,9 @@ export const getStepDetailsByApplicationId = async (req, res) => {
 
 
 //add exam
-import Exam from "../models/Exam.js"
+// import Exam from "../models/Exam.js"
+
+
 export const getAdmitCard = async (req, res) => {
   try {
     const { applicationId } = req.params;
@@ -899,8 +1052,8 @@ export const getAdmitCard = async (req, res) => {
       registration?.examId?.examName || appInfo?.examName || "N/A";
     const examCode =
       registration?.examId?.examCode || appInfo?.examCode || "N/A";
-//
-  const DEFAULT_IMAGE =
+    //
+    const DEFAULT_IMAGE =
       "https://res.cloudinary.com/dkocmwzhh/image/upload/v1762407097/0_kromzz.jpg";
 
     // ✅ Build admit card response
@@ -942,11 +1095,11 @@ export const getAdmitCard = async (req, res) => {
         appProfile.documents?.photo?.url ||
         user.profile?.photo ||
         null,
-        signature: user.profile?.documents?.signature?.url || null,
-  defaultImage: DEFAULT_IMAGE,
+      signature: user.profile?.documents?.signature?.url || null,
+      defaultImage: DEFAULT_IMAGE,
       // ✅ Cleaned Profile
       profile: cleanedProfile,
-      
+
     };
 
     return res.status(200).json({

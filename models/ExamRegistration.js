@@ -13,10 +13,43 @@ const ExamRegistrationSchema = new mongoose.Schema(
       required: true,
     },
    
-    examId: {
-      type: String,   // <- Change to string
-      required: true,
-    },
+    // examId: {
+    //   type: String,   // <- Change to string
+    //   required: true,
+    // },
+      examId: { type: mongoose.Schema.Types.ObjectId, ref: "Exam" },
+  //      examDetails: {
+  //   code: String,
+  //   title: String,
+  //   dateOfExam: String,
+  //   paperMedium: String,
+  //   amountPayable: Number,
+  //   eligibilityCriteria: String,
+  //   requiredLevel: String,
+  // },
+    examDetails: {
+    _id: String,
+    subject: String,
+    internationalAmount: Number,
+    nationalAmount: Number,
+    currency: String,
+    examCode: String,
+    backendCode: String,
+    paperMedium: String,
+    dateOfExam: String,
+    breakTime: String,
+    gateClosingTime: String,
+    status: String,
+    requiredLevel: String,
+    eligibilityCriteria: String,
+
+    // ✅ Nested Objects
+    centers: { type: Object },
+    details: { type: Object },
+    stats: { type: Object },
+    instructions: [String],
+  },
+
     applicationInfo: {
       applicationDate: { type: Date, default: Date.now },
       examDate: { type: Date, required: true },
@@ -79,6 +112,10 @@ const ExamRegistrationSchema = new mongoose.Schema(
   type: Number,
   default: 1,
 },
+
+
+
+
   },
   
 

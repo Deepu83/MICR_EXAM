@@ -8,8 +8,7 @@ import cors from "cors"; // <-- import cors
 import examRoutes from "./routes/examRoutes.js"; 
 import examApplicationRoutes from "./routes/examApplicationRoutes.js";
 import examRegistrationRoutes from "./routes/ExamRegistrationRoutes.js";
-
-
+// number of CPU cores
 import mockTestRoutes from "./routes/mockTestRoutes.js";
 
 

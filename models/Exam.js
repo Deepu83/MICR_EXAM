@@ -51,12 +51,22 @@ const examSchema = new mongoose.Schema({
       marks: { type: String },
       mode: { type: String },
       status: { type: String }
+      //  status: {
+      //   type: String,
+      //   enum: ["Open", "active", "inactive"], // ✅ Allowed values only
+      //   default: "Open",
+      // },
     },
+    
 
     // ✅ Array of instructions
-    instructions: [{ type: String }]
+    instructions: [{ type: String }],
 
-  }
+
+  }, registrationCount: {
+      type: Number,
+      default: 0,
+    },
   
 },
 { strict: false } // ✅ <--- ALLOW EXTRA FIELDS
