@@ -5,8 +5,6 @@ import mongoose from "mongoose";
 const examSchema = new mongoose.Schema({
     examName: { type: String, required: false },
   code: { type: String, required: false },
-
-
    subject: String,
     internationalAmount: Number, 
   
@@ -51,12 +49,7 @@ const examSchema = new mongoose.Schema({
       duration: { type: String },
       marks: { type: String },
       mode: { type: String },
-     
-      //  status: {
-      //   type: String,
-      //   enum: ["Open", "active", "inactive"], // ✅ Allowed values only
-      //   default: "Open",
-      // },
+
     },
     
 
