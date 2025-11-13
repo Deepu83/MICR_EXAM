@@ -17,60 +17,6 @@ export const createExam = async (req, res) => {
 
 
 
-export const getAllExams = async (req, res) => {
-  try {
-    const exams = await Exam.find();
-
-    // ✅ Total exams
-    const totalExams = exams.length;
-
-    // ✅ Active exams (status === "Open")
-    const activeExams = exams.filter(
-      exam => exam?.status?.toLowerCase() === "open"
-    ).length;
-
-    // Map exams to add requiredLevel
-    const examsWithRequiredLevel = exams.map(exam => {
-      let requiredLevel = null;
-
-      switch (exam.examCode) {
-        case "1A":
-          requiredLevel = "1B";
-          break;
-        case "1B":
-          requiredLevel = "1A";
-          break;
-        case "3A":
-          requiredLevel = "3B";
-          break;
-        case "3B":
-          requiredLevel = "3A";
-        case "2":
-          requiredLevel="2";
-           break;
-        case "3":
-          requiredLevel="3";
-          break;
-        default:
-          requiredLevel = null;
-      }
-
-      return {
-        ...exam._doc,
-        requiredLevel,
-      };
-    });
-
-    res.status(200).json({
-      totalExams,
-      activeExams,
-      exams: examsWithRequiredLevel,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 // export const getAllExams = async (req, res) => {
 //   try {
 //     const exams = await Exam.find();
@@ -78,20 +24,76 @@ export const getAllExams = async (req, res) => {
 //     // ✅ Total exams
 //     const totalExams = exams.length;
 
-//     // ✅ Active exams (assuming status is at root level)
+//     // ✅ Active exams (status === "Open")
 //     const activeExams = exams.filter(
-//       exam => exam?.status?.toLowerCase() === "active"
+//       exam => exam?.status?.toLowerCase() === "open"
 //     ).length;
+
+//     // Map exams to add requiredLevel
+//     const examsWithRequiredLevel = exams.map(exam => {
+//       let requiredLevel = null;
+
+//       switch (exam.examCode) {
+//         case "1A":
+//           requiredLevel = "1B";
+//           break;
+//         case "1B":
+//           requiredLevel = "1A";
+//           break;
+//         case "3A":
+//           requiredLevel = "3B";
+//           break;
+//         case "3B":
+//           requiredLevel = "3A";
+//         case "2":
+//           requiredLevel="2";
+//            break;
+//         case "3":
+//           requiredLevel="3";
+//           break;
+//         default:
+//           requiredLevel = null;
+//       }
+
+//       return {
+//         ...exam._doc,
+//         requiredLevel,
+//       };
+//     });
 
 //     res.status(200).json({
 //       totalExams,
 //       activeExams,
-//       exams, // full list of exams
+//       exams: examsWithRequiredLevel,
 //     });
 //   } catch (error) {
 //     res.status(500).json({ message: error.message });
 //   }
 // };
+
+export const getAllExams = async (req, res) => {
+  try {
+    const exams = await Exam.find();
+
+    // ✅ Total exams
+    const totalExams = exams.length;
+
+    // ✅ Active exams (assuming status is at root level)
+    // ✅ Active exams (status === "Open")
+    const activeExams = exams.filter(
+      exam => exam?.status?.toLowerCase() === "open"
+    ).length;
+
+
+    res.status(200).json({
+      totalExams,
+      activeExams,
+      exams, // full list of exams
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 export const getExamByCode = async (req, res) => {
   try {
