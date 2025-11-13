@@ -16,7 +16,6 @@ export const createExam = async (req, res) => {
 
 
 
-
 export const getAllExams = async (req, res) => {
   try {
     const exams = await Exam.find();
@@ -24,52 +23,22 @@ export const getAllExams = async (req, res) => {
     // ✅ Total exams
     const totalExams = exams.length;
 
-    // ✅ Active exams (status === "Open")
+    // ✅ Active exams (assuming status is at root level)
     const activeExams = exams.filter(
-      exam => exam?.status?.toLowerCase() === "open"
+      exam => exam?.status?.toLowerCase() === "active"
     ).length;
-
-    // Map exams to add requiredLevel
-    const examsWithRequiredLevel = exams.map(exam => {
-      let requiredLevel = null;
-
-      switch (exam.examCode) {
-        case "1A":
-          requiredLevel = "1B";
-          break;
-        case "1B":
-          requiredLevel = "1A";
-          break;
-        case "3A":
-          requiredLevel = "3B";
-          break;
-        case "3B":
-          requiredLevel = "3A";
-        case "2":
-          requiredLevel="2";
-           break;
-        case "3":
-          requiredLevel="3";
-          break;
-        default:
-          requiredLevel = null;
-      }
-
-      return {
-        ...exam._doc,
-        requiredLevel,
-      };
-    });
 
     res.status(200).json({
       totalExams,
       activeExams,
-      exams: examsWithRequiredLevel,
+      exams, // full list of exams
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+
 
 // export const getAllExams = async (req, res) => {
 //   try {
@@ -78,90 +47,88 @@ export const getAllExams = async (req, res) => {
 //     // ✅ Total exams
 //     const totalExams = exams.length;
 
-//     // ✅ Active exams (assuming status is at root level)
+//     // ✅ Active exams (status === "Open")
 //     const activeExams = exams.filter(
-//       exam => exam?.status?.toLowerCase() === "active"
+//       exam => exam?.status?.toLowerCase() === "open"
 //     ).length;
+
+//     // Map exams to add requiredLevel
+//     const examsWithRequiredLevel = exams.map(exam => {
+//       let requiredLevel = null;
+
+//       switch (exam.examCode) {
+//         case "1A":
+//           requiredLevel = "1B";
+//           break;
+//         case "1B":
+//           requiredLevel = "1A";
+//           break;
+//         case "3A":
+//           requiredLevel = "3B";
+//           break;
+//         case "3B":
+//           requiredLevel = "3A";
+//         case "2":
+//           requiredLevel="2";
+//            break;
+//         case "3":
+//           requiredLevel="3";
+//           break;
+//         default:
+//           requiredLevel = null;
+//       }
+
+//       return {
+//         ...exam._doc,
+//         requiredLevel,
+//       };
+//     });
 
 //     res.status(200).json({
 //       totalExams,
 //       activeExams,
-//       exams, // full list of exams
+//       exams: examsWithRequiredLevel,
 //     });
 //   } catch (error) {
 //     res.status(500).json({ message: error.message });
 //   }
 // };
 
-
-
 export const getExamByCode = async (req, res) => {
   try {
-    const { examCode } = req.params;
-    console.log("Exam Code:", examCode);
+    const { examCode } = req.params; // ✅ Correct param name
+    console.log("Requested Exam Code:", examCode);
 
-    // Handle complex exam hierarchies
+    // 🔍 Find all exams that match this code or its parts (like 1A, 1B)
     const examCodeRegex = new RegExp(`^${examCode}([A-Z]\\d*)?$`, "i");
 
-    // Find exams that match this pattern
-    const exams = await Exam.find({ examCode: { $regex: examCodeRegex } }).lean();
+    const exams = await Exam.find({ examCode: { $regex: examCodeRegex } });
 
     if (!exams || exams.length === 0) {
       return res.status(404).json({ message: "Exam not found" });
     }
 
-    // Count total and active exams
-    const totalExams = exams.length;
-    const activeExams = exams.filter(
-      exam => (exam.status || exam.details?.stats?.status || "").toLowerCase() === "active"
-    ).length;
-
-    // Format and clean exams
-    const formattedExams = exams.map((exam) => {
-      const instructions =
-        exam.details?.instructions && Array.isArray(exam.details.instructions)
-          ? exam.details.instructions
-          : exam.instructions
-          ? Array.isArray(exam.instructions)
-            ? exam.instructions
-            : [exam.instructions]
-          : [];
-
-      const details = {
-        module: exam.module || exam.details?.module,
-        stats: {
-          questions: exam.questions || exam.details?.stats?.questions,
-          duration: exam.duration || exam.details?.stats?.duration,
-          marks: exam.marks || exam.details?.stats?.marks,
-          mode: exam.mode || exam.details?.stats?.mode,
-          status: exam.status || exam.details?.stats?.status || "Active",
-        },
-        instructions,
-      };
-
-      if (
-        !details.module &&
-        !details.stats.questions &&
-        !details.instructions.length
-      ) {
-        delete exam.details;
-      }
-
-      return { ...exam, details };
-    });
-
-    // Send response with totals
-    res.status(200).json({
-      totalExams,
-      activeExams,
-      exams: formattedExams
-    });
-
+    // ✅ Return array (safe for frontend .map())
+    res.status(200).json(exams);
   } catch (error) {
-    console.error("Error fetching exams:", error);
+    console.error("Error fetching exam:", error);
     res.status(500).json({ message: error.message });
   }
 };
+
+
+// export const getExamByCode = async (req, res) => {
+//   try {
+//     const exam = await Exam.findOne({ code: req.params.code });
+//     console.log(req.params.code)
+//     if (!exam) return res.status(404).json({ message: "Exam not found" });
+//     res.status(200).json(exam);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };  
+
+
 
 
 // ✅ Update exam by code
