@@ -117,16 +117,7 @@ export const getExamByCode = async (req, res) => {
 };
 
 
-// export const getExamByCode = async (req, res) => {
-//   try {
-//     const exam = await Exam.findOne({ code: req.params.code });
-//     console.log(req.params.code)
-//     if (!exam) return res.status(404).json({ message: "Exam not found" });
-//     res.status(200).json(exam);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };  
+
 
 
 

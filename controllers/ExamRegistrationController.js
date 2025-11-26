@@ -360,7 +360,7 @@ examDetails: {
         applicationNumber: appNum3B,
         userId: new mongoose.Types.ObjectId(userId),
         examId,
-           examDetail: {
+           examDetails: {
   _id: exam._id,
   subject: exam.subject,
   internationalAmount: exam.internationalAmount,

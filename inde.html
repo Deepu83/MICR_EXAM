@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mock Test - Autosave</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+  .question { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+  .options label { display: block; margin-bottom: 10px; }
+  .status { padding: 10px; margin-bottom: 20px; border-radius: 5px; }
+  .status.success { background: #d4edda; color: #155724; }
+  .status.error { background: #f8d7da; color: #721c24; }
+  button { padding: 10px 20px; border: none; background: #007bff; color: #fff; border-radius: 5px; cursor: pointer; }
+  button:hover { background: #0056b3; }
+</style>
+</head>
+<body>
+
+<h1>Mock Test</h1>
+<div id="status" class="status" style="display:none;"></div>
+<div id="questions">Loading questions...</div>
+
+<script>
+const GET_API_URL = "http://localhost:5000/api/mocktests"; 
+const SUBMIT_API_URL = "http://localhost:5000/api/mocktests/submit"; 
+const userId = "6909a8eb9fce0ecacc696e18"; 
+let mockTestId = ""; 
+const answers = {}; 
+const container = document.getElementById("questions");
+
+// Show status
+function showStatus(msg, type) {
+  const statusDiv = document.getElementById("status");
+  statusDiv.textContent = msg;
+  statusDiv.className = `status ${type}`;
+  statusDiv.style.display = "block";
+  setTimeout(() => statusDiv.style.display = "none", 2000);
+}
+
+// Autosave
+function autosave(questionId, value) {
+  answers[questionId] = value;
+  if (!mockTestId) return;
+
+  const payload = {
+    mockTestId,
+    userId,
+    answers: Object.entries(answers).map(([qId, sel]) => ({
+      questionId: qId,
+      selected: sel
+    })),
+    autoSave: true
+  };
+
+  fetch(SUBMIT_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(() => showStatus("Autosaved successfully", "success"))
+  .catch(err => {
+    console.error("Autosave error:", err);
+    showStatus("Autosave failed", "error");
+  });
+}
+
+// Render questions
+function renderQuestions(questions) {
+  container.innerHTML = "";
+  questions.forEach(q => {
+    const div = document.createElement("div");
+    div.className = "question";
+
+    let html = `<p><strong>${q.question}</strong></p>`;
+    let type = q.type === "objective" ? "single" : q.type;
+
+    if (type === "single") {
+      html += '<div class="options">';
+      q.options.forEach(opt => {
+        html += `<label><input type="radio" name="${q._id}" value="${opt}"> ${opt}</label>`;
+      });
+      html += '</div>';
+    } else if (type === "multiple") {
+      html += '<div class="options">';
+      q.options.forEach(opt => {
+        html += `<label><input type="checkbox" name="${q._id}" value="${opt}"> ${opt}</label>`;
+      });
+      html += '</div>';
+    } else if (type === "subjective") {
+      html += `<textarea name="${q._id}" rows="4" cols="50" placeholder="Type your answer here..."></textarea>`;
+    }
+
+    div.innerHTML = html;
+    container.appendChild(div);
+
+    if (type === "single") {
+      document.getElementsByName(q._id).forEach(input => {
+        input.addEventListener("change", e => autosave(q._id, e.target.value));
+      });
+    } else if (type === "multiple") {
+      document.getElementsByName(q._id).forEach(input => {
+        input.addEventListener("change", () => {
+          const selected = Array.from(document.getElementsByName(q._id))
+                                .filter(i => i.checked)
+                                .map(i => i.value);
+          autosave(q._id, selected);
+        });
+      });
+    } else if (type === "subjective") {
+      document.getElementsByName(q._id)[0].addEventListener("input", e => autosave(q._id, e.target.value));
+    }
+  });
+}
+
+// Fetch questions
+fetch(GET_API_URL)
+  .then(res => res.json())
+  .then(data => {
+    if (!Array.isArray(data) || data.length === 0) throw new Error("No mock tests found");
+    const test = data[0]; // use the first mock test
+    if (!test.questions) throw new Error("Invalid test format");
+    mockTestId = test._id;
+    renderQuestions(test.questions);
+  })
+  .catch(err => {
+    console.error("Error fetching questions:", err);
+    container.innerHTML = "<p>Failed to load questions. Please try again later.</p>";
+  });
+
+</script>
+</body>
+</html>
