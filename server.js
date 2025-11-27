@@ -11,13 +11,45 @@ import examRegistrationRoutes from "./routes/ExamRegistrationRoutes.js";
 // number of CPU cores
 import mockTestRoutes from "./routes/mockTestRoutes.js";
 
-
+// import rateLimit from "express-rate-limit";
+import { RateLimiterMemory } from "rate-limiter-flexible";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+
+
+//express rate limit globally 
+// const limiter = rateLimit({
+//   windowMs: 10 * 1000, // 10 seconds
+//   max: 10,
+//   message: "Too many requests, try again later",
+// });
+const tokenBucket = new RateLimiterMemory({
+  points: 100,          // 5 requests allowed
+  duration: 10,       // refill bucket every 10 seconds
+  blockDuration: 5,   // block for 5 seconds after limit reached
+});
+
+
+export const tokenBucketMiddleware = async (req, res, next) => {
+  try {
+    await tokenBucket.consume(req.ip); // consume 1 token per request
+    next();
+  } catch (err) {
+    res.status(429).json({
+      success: false,
+      message: "Too many requests (Token Bucket). Try again later!",
+    });
+  }
+};
+
+
+// Apply globally
+app.use(tokenBucketMiddleware);
 // Routes
 app.use("/api/users/auth", userAuthRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);

@@ -25,13 +25,15 @@ export const getAdminDashboardCounts = async (req, res) => {
 
     // 🔹 Total Mock Tests
     const mockTests = await MockTest.countDocuments();
+        const Results = await AutoSave.countDocuments();
 
     res.status(200).json({
       exams,
       students,
       applications,
       editRequests,
-      mockTests
+      mockTests,
+      Results
     });
 
   } catch (error) {

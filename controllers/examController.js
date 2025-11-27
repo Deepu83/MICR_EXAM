@@ -276,3 +276,74 @@ export const getExamRegistrationCount = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+//
+
+
+// export const allowExam = async (req, res) => {
+//   try {
+//     const { examId } = req.params;
+
+//     // Check if examId is valid
+//     if (!examId.match(/^[0-9a-fA-F]{24}$/)) {
+//       return res.status(400).json({ msg: "Invalid exam ID" });
+//     }
+
+//     // Find exam and update allowed flag
+//     const exam = await Exam.findByIdAndUpdate(
+//       examId,
+//       { allowed: true },
+//       { new: true }
+//     );
+
+//     if (!exam) {
+//       return res.status(404).json({ msg: "Exam not found" });
+//     }
+
+//     return res.status(200).json({
+//       msg: `✅ Exam '${exam.examName}' is now allowed for admit card generation`,
+//       exam,
+//     });
+//   } catch (err) {
+//     console.error("❌ allowExam error:", err);
+//     return res.status(500).json({ msg: "Server error", error: err.message });
+//   }
+// };
+export const allowExam = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const { allowed } = req.body; // true / false from admin
+
+    // Validate exam ID
+    if (!examId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ msg: "Invalid exam ID" });
+    }
+
+    // Validate allowed flag
+    if (typeof allowed !== "boolean") {
+      return res.status(400).json({ msg: "allowed must be true or false" });
+    }
+
+    // Update exam status
+    const exam = await Exam.findByIdAndUpdate(
+      examId,
+      { allowed },
+      { new: true }
+    );
+
+    if (!exam) {
+      return res.status(404).json({ msg: "Exam not found" });
+    }
+
+    return res.status(200).json({
+      msg: allowed
+        ? `✅ Exam '${exam.examName}' is now allowed for admit card generation`
+        : `⛔ Exam '${exam.examName}' is now NOT allowed`,
+      exam,
+    });
+
+  } catch (err) {
+    console.error("❌ allowExam error:", err);
+    return res.status(500).json({ msg: "Server error", error: err.message });
+  }
+};

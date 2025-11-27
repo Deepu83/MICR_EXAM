@@ -6,7 +6,8 @@ import { createHmac } from "crypto";
 
 // import User from "../models/User.js";
 
-
+import dotenv from "dotenv";
+dotenv.config();
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -949,19 +950,35 @@ export const getAdmitCard = async (req, res) => {
 
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(applicationId);
 
-    // 🔹 Step 1: Try to find registration by applicationNumber
-    let registration = await ExamRegistration.findOne({
-      applicationNumber: applicationId,
-    })
-      .populate("examId", "examName examCode")
-      .lean();
 
-    // 🔹 Step 2: Try by ObjectId if not found
-    if (!registration && isObjectId) {
-      registration = await ExamRegistration.findById(applicationId)
-        .populate("examId", "examName examCode")
-        .lean();
-    }
+// 🔹 Step 1: Try to find registration by applicationNumber
+let registration = await ExamRegistration.findOne({
+  applicationNumber: applicationId,
+})
+  .populate("examId", "examName examCode allowed") // make sure to include 'allowed'
+  .lean();
+
+// 🔹 Step 2: Try by ObjectId if not found
+if (!registration && isObjectId) {
+  registration = await ExamRegistration.findById(applicationId)
+    .populate("examId", "examName examCode allowed") // include 'allowed'
+    .lean();
+}
+
+// 🔹 Check if registration exists
+if (!registration) {
+  return res.status(404).json({
+    msg: "❌ Registration not found for this application ID",
+  });
+}
+
+// 🔹 Check if exam is allowed
+if (!registration.examId?.allowed) {
+  return res.status(403).json({
+    msg: "❌ Admit card generation not allowed for this exam yet. Please contact admin.",
+  });
+}
+
 
     // 🔹 Step 3: Try to locate user directly from progression if registration not found
     let user;

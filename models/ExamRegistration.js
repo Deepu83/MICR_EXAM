@@ -18,15 +18,7 @@ const ExamRegistrationSchema = new mongoose.Schema(
     //   required: true,
     // },
       examId: { type: mongoose.Schema.Types.ObjectId, ref: "Exam" },
-  //      examDetails: {
-  //   code: String,
-  //   title: String,
-  //   dateOfExam: String,
-  //   paperMedium: String,
-  //   amountPayable: Number,
-  //   eligibilityCriteria: String,
-  //   requiredLevel: String,
-  // },
+
     examDetails: {
     _id: String,
     subject: String,
@@ -112,6 +104,9 @@ const ExamRegistrationSchema = new mongoose.Schema(
   type: Number,
   default: 1,
 },
+//
+allowed: { type: Boolean, default: false } // admin sets this to true when exam is allowed
+
 
 
 

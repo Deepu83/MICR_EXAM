@@ -2,6 +2,7 @@
 import cloudinary from "../../config/cloudinary.js";
 import fs from "fs";
 import path from "path";
+import sgMail from "@sendgrid/mail";
 
 import dotenv from "dotenv";
 // dotenv.config(); // Make sure env variables are loaded at the very top
@@ -21,33 +22,11 @@ const JWT_SECRET =
   "860bafe47a1d1e7e81a54e72a7aa9d35721517fc2d259f61df9c0a8441a1e5f75343d33c70042ba2d6154f5cbb239f741fd7e2916dfbde87901ae9522cbbb78a";
 const JWT_EXPIRES = "1d";
 
-// ✅ Configure Nodemailer transporter using Gmail
-// const transporter = nodemailer.createTransport({
-//   service: "gmail",
-//   auth: {
-//     user: process.env.EMAIL_USER,
-//     pass: process.env.EMAIL_PASS,
-//   },
-// });
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "kandpaldeepak253@gmail.com",
-    pass: "ytpl sqpy fokh ldck", // your Gmail App Password
-  },
-});
 
 
-// ✅ Verify transporter once when the server starts
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("❌ Email transporter configuration error:", error);
-  } else {
-    console.log("✅ Email transporter is ready to send messages");
-  }
-});
 
-// ✅ Register new user
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 
 
 
@@ -105,38 +84,41 @@ export const register = async (req, res) => {
       expiresIn: JWT_EXPIRES,
     });
 
-    // ✅ Prepare mail
-    const mailOptions = {
-      from: `"Cognoscente Invented Pvt. Ltd." <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: "Registration Successful ✅",
-      html: `
-        <h2>Welcome, ${user.name}!</h2>
-        <p>You have successfully registered with <strong>Cognoscente Invented Pvt. Ltd.</strong>.</p>
-        <h3>Your Details:</h3>
-        <ul>
-          <li><strong>Register No:</strong> ${user.registerNo}</li>
-          <li><strong>Email:</strong> ${user.email}</li>
-          <li><strong>Mobile:</strong> ${user.mobileNumber}</li>
-          <li><strong>Aadhaar:</strong> ${user.aadhaarNumber}</li>
-        </ul>
-        <p>Thank you for registering. You can now log in using your credentials.</p>
-        <br/>
-        <p>Best regards,<br/>Cognoscente Invented Pvt. Ltd. Team</p>
-      `,
-    };
+// Prepare SendGrid email options
+const msg = {
+  to: user.email,
+  from: {
+    email: process.env.EMAIL_FROM, // must be verified in SendGrid
+    name: "Welcome to MICR Exam"
+  },
+  subject: "Registration Successful ✅",
+  html: `
+    <h2>Welcome, ${user.name}!</h2>
+    <p>You have successfully registered with <strong>MICR Exam</strong>.</p>
+    <h3>Your Details:</h3>
+    <ul>
+      <li><strong>Register No:</strong> ${user.registerNo}</li>
+      <li><strong>Email:</strong> ${user.email}</li>
+      <li><strong>Mobile:</strong> ${user.mobileNumber}</li>
+      <li><strong>Aadhaar:</strong> ${user.aadhaarNumber}</li>
+    </ul>
+    <p>Thank you for registering. You can now log in using your credentials.</p>
+    <br/>
+    <p>Best regards,<br/>MICR Exam. Team</p>
+  `,
+};
 
-    // ✅ Send email asynchronously (Render-safe)
-    Promise.race([
-      transporter.sendMail(mailOptions),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Email timeout")), 7000)
-      ),
-    ])
-      .then((info) => console.log("📩 Email sent successfully:", info.response))
-      .catch((emailError) =>
-        console.error("⚠️ Email failed or timed out:", emailError.message)
-      );
+// 🚀 SendGrid async + 7 second timeout (safe)
+Promise.race([
+  sgMail.send(msg),
+  new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Email timeout")), 7000)
+  ),
+])
+  .then(() => console.log("📩 SendGrid email sent successfully"))
+  .catch((emailError) =>
+    console.error("⚠️ SendGrid email failed or timed out:", emailError.message)
+  );
 
     // ✅ Send response immediately (don’t wait for email)
     return res.status(201).json({
@@ -193,7 +175,6 @@ export const login = async (req, res) => {
 };
 //otp 
 // ✅ Send OTP for profile update
-import sgMail from "@sendgrid/mail";
 
 
 

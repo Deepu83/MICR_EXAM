@@ -7,6 +7,8 @@ import {
   register, login, updateProfile, getAllUsers, getUserById, adminMarkStepPassed, requestProfileEdit,
   approveProfileEdit,sendProfileUpdateOTP,getEditRequests,getDashboardStats,updateExamStatusByRegisterNo
 } from "../../controllers/user/authController.js";
+import { protect} from "../../middleware/authMiddleware.js";
+
 
 const router = express.Router();
 
@@ -36,7 +38,7 @@ router.post("/login", login);
 
 // Update profile with files
 router.put(
-  "/update-profile/:userId",
+  "/update-profile/:userId",protect,
   upload.fields([
     { name: "photo", maxCount: 1 },
     { name: "signature", maxCount: 1 },
@@ -53,7 +55,7 @@ router.put(
 //
 // 🟡 NEW: Request to edit profile (with file uploads, pending admin approval)
 router.put(
-  "/request-edit/:userId",
+  "/request-edit/:userId",protect,
   upload.fields([
     { name: "photo", maxCount: 1 },
     { name: "signature", maxCount: 1 },
@@ -69,20 +71,20 @@ router.put(
 
 
 // 🟢 NEW: Admin approves/rejects edit request
-router.put("/approve-edit/:userId", approveProfileEdit);
+router.put("/approve-edit/:userId",protect, approveProfileEdit);
 router.post("/update-status-by-register", updateExamStatusByRegisterNo);
 
 // ---------------- GET all users ----------------
 router.get("/users", getAllUsers);
-router.get("/edit/requests", getEditRequests); // 👈 New route
+router.get("/edit/requests", protect,getEditRequests); // 👈 New route
 router.get("/users/:userId", getUserById);
-router.get("/dashboard-stats", getDashboardStats);
+router.get("/dashboard-stats",protect, getDashboardStats);
 
 
 router.put("/users/progression", adminMarkStepPassed);
 
 //otp
-router.post("/send-otp/:userId", sendProfileUpdateOTP);
+router.post("/send-otp/:userId",protect, sendProfileUpdateOTP);
 
 // export default router;
 export default router;
