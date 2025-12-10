@@ -13,10 +13,7 @@ const ExamRegistrationSchema = new mongoose.Schema(
       required: true,
     },
    
-    // examId: {
-    //   type: String,   // <- Change to string
-    //   required: true,
-    // },
+   
       examId: { type: mongoose.Schema.Types.ObjectId, ref: "Exam" },
 
     examDetails: {
@@ -107,10 +104,6 @@ const ExamRegistrationSchema = new mongoose.Schema(
 //
 allowed: { type: Boolean, default: false } // admin sets this to true when exam is allowed
 
-
-
-
-
   },
   
 
@@ -120,7 +113,9 @@ allowed: { type: Boolean, default: false } // admin sets this to true when exam 
 );
 
 // Optional: Ensure unique application per user per exam
-ExamRegistrationSchema.index({ userId: 1, examId: 1 }, { unique: true });
+ExamRegistrationSchema.index({ userId: 1, examId: 1,"examDetails.paper": 1 }, { unique: true });
+
+
 
 const ExamRegistration = mongoose.model(
   "ExamRegistration",

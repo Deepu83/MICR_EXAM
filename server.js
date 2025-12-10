@@ -10,15 +10,19 @@ import examApplicationRoutes from "./routes/examApplicationRoutes.js";
 import examRegistrationRoutes from "./routes/ExamRegistrationRoutes.js";
 // number of CPU cores
 import mockTestRoutes from "./routes/mockTestRoutes.js";
+import cookieParser from "cookie-parser";
 
+import applicationRoutes from "./routes/applicationRoutes.js";
 // import rateLimit from "express-rate-limit";
 import { RateLimiterMemory } from "rate-limiter-flexible";
+import applicationRoutes2 from "./routes/applicationRoutes2.js"
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(cookieParser());
 
 
 
@@ -29,7 +33,7 @@ app.use(cors());
 //   message: "Too many requests, try again later",
 // });
 const tokenBucket = new RateLimiterMemory({
-  points: 100,          // 5 requests allowed
+  points: 1000,          // 5 requests allowed
   duration: 10,       // refill bucket every 10 seconds
   blockDuration: 5,   // block for 5 seconds after limit reached
 });
@@ -57,6 +61,10 @@ app.use("/api", examRoutes);
 app.use("/api/exam-applications", examApplicationRoutes);
 app.use("/api/registrations", examRegistrationRoutes);
 app.use("/api/mocktests", mockTestRoutes);
+
+//for zip fiel 
+app.use("/api/application", applicationRoutes);
+app.use("/api/application2",applicationRoutes2);
 // Sample test route
 app.get("/", (req, res) => res.send("🚀 Express + MongoDB running successfully!"));
 app.get("/health", (req, res) => {

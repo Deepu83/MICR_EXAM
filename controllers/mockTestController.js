@@ -9,6 +9,8 @@ import AutoSave from "../models/AutoSave.js"; // <-- AUTOSAVE MODEL
 
 // 📌 SINGLE API FOR ALL DASHBOARD COUNTS
 export const getAdminDashboardCounts = async (req, res) => {
+
+  res.setHeader("name","deepanshu");
   try {
     // 🔹 Total Exams
     const exams = await Exam.countDocuments();
@@ -19,9 +21,10 @@ export const getAdminDashboardCounts = async (req, res) => {
     // 🔹 Total Applications (exam registrations)
     const applications = await ExamRegistration.countDocuments();
 
-    // 🔹 Edit Profile Requests
-    // Assuming user has field: requestEditProfile: true
-    const editRequests = await User.countDocuments({ requestEditProfile: true });
+
+const editRequestsCount = await User.countDocuments({ 
+  editApprovalStatus: { $in: ["pending", "approved", "rejected", "updated"] } 
+});
 
     // 🔹 Total Mock Tests
     const mockTests = await MockTest.countDocuments();
@@ -31,7 +34,8 @@ export const getAdminDashboardCounts = async (req, res) => {
       exams,
       students,
       applications,
-      editRequests,
+      // editRequests,
+        editRequests: editRequestsCount,
       mockTests,
       Results
     });

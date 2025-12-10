@@ -229,6 +229,8 @@ examDetails: {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
+        
+        centers,
       });
 
       // Save registration for Paper 2
@@ -1064,12 +1066,32 @@ if (!registration.examId?.allowed) {
 
     // ✅ Extract exam details safely
     const appInfo = registration?.applicationInfo || {};
-    const centers = registration?.centers || appInfo?.centers || {};
+    // const centers = registration?.centers || appInfo?.centers || {};
+const centers = registration?.centers ?? {};
+
+// Convert to array of center names, ignoring undefined/null
+const centerNames = Object.keys(centers)
+  .filter(key => key.startsWith("center") && centers[key])
+  .map(key => centers[key]);
+
+console.log("Centers object:", centers);
+console.log("Center names array:", centerNames);
+
+console.log("Centers:", centers);
+
+
     const examName =
       registration?.examId?.examName || appInfo?.examName || "N/A";
     const examCode =
       registration?.examId?.examCode || appInfo?.examCode || "N/A";
     //
+    const examDetails = registration?.examDetails || {};
+
+// Extract gateClosingTime and breakTime from examDetails
+const gateClosingTime = examDetails?.gateClosingTime || appInfo?.gateClosingTime || null;
+const breakTime = examDetails?.breakTime || appInfo?.breakTime || null;
+const subjectName = examDetails?.subject || "N/A";  // ✅ use examDetails.subject
+
     const DEFAULT_IMAGE =
       "https://res.cloudinary.com/dkocmwzhh/image/upload/v1762407097/0_kromzz.jpg";
 
@@ -1080,7 +1102,9 @@ if (!registration.examId?.allowed) {
       examCode,
       examDate: appInfo?.examDate || null,
       reportingTime: appInfo?.reportingTime || "08:30 AM",
-      gateClosingTime: appInfo?.gateClosingTime || null,
+      gateClosingTime,
+      breakTime,
+      subjectName,
       examTimings: appInfo?.timing || null,
       centerName: [
         centers.center1,

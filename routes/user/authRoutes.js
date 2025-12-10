@@ -5,7 +5,7 @@ import fs from "fs";
 import path from "path";
 import {
   register, login, updateProfile, getAllUsers, getUserById, adminMarkStepPassed, requestProfileEdit,
-  approveProfileEdit,sendProfileUpdateOTP,getEditRequests,getDashboardStats,updateExamStatusByRegisterNo
+  approveProfileEdit,sendProfileUpdateOTP,getEditRequests,getDashboardStats,updateExamStatusByRegisterNo,editApprovedFields
 } from "../../controllers/user/authController.js";
 import { protect} from "../../middleware/authMiddleware.js";
 
@@ -55,7 +55,7 @@ router.put(
 //
 // 🟡 NEW: Request to edit profile (with file uploads, pending admin approval)
 router.put(
-  "/request-edit/:userId",protect,
+  "/request-edit/:userId",
   upload.fields([
     { name: "photo", maxCount: 1 },
     { name: "signature", maxCount: 1 },
@@ -69,14 +69,25 @@ router.put(
   requestProfileEdit
 );
 
+router.put("/edit-approved/:userId" , upload.fields([
+    { name: "photo", maxCount: 1 },
+    { name: "signature", maxCount: 1 },
+    { name: "id_proof", maxCount: 1 },
+    { name: "education", maxCount: 1 },
+    { name: "address", maxCount: 1 },
+    { name: "registrationCertificate", maxCount: 1 },
+    { name: "mbbsCertificate", maxCount: 1 },
+    { name: "pgCertificate", maxCount: 1 },
+  ]), editApprovedFields);
+
 
 // 🟢 NEW: Admin approves/rejects edit request
-router.put("/approve-edit/:userId",protect, approveProfileEdit);
+router.put("/approve-edit/:userId", approveProfileEdit);
 router.post("/update-status-by-register", updateExamStatusByRegisterNo);
 
 // ---------------- GET all users ----------------
 router.get("/users", getAllUsers);
-router.get("/edit/requests", protect,getEditRequests); // 👈 New route
+router.get("/edit/requests", getEditRequests); // 👈 New route
 router.get("/users/:userId", getUserById);
 router.get("/dashboard-stats",protect, getDashboardStats);
 

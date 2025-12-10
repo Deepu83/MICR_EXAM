@@ -641,55 +641,157 @@ user.progression.currentLevel = currentLevel;
 
 
 
-//edit api
-// User requests edit - stored for admin approval
+// export const requestProfileEdit = async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+//     const { requestType, remark, ...updates } = req.body;
+
+//     // --------------------- VALIDATION ---------------------
+//     const allowedRequestTypes = [
+//       // "Personal Information",
+//       // "Contact Details",
+//       // "Educational Qualification",
+//       // "Professional Details",
+//       // "Address Information",
+//       // "Document Update",
+//       // "Other",
+//        "Application Details",    // maps to user.application
+//   "Educational Details",    // maps to user.education
+//   "Document Update",        // maps to user.documents
+//   "Other Changes"   
+//     ];
+
+//     if (!requestType || !allowedRequestTypes.includes(requestType)) {
+//       return res.status(400).json({ msg: "Invalid or missing request type" });
+//     }
+
+//     if (!remark || remark.trim().length < 5) {
+//       return res.status(400).json({ msg: "Remark must be at least 5 characters" });
+//     }
+
+//     // --------------------- USER FIND ---------------------
+//     const user = await User.findById(userId);
+//     if (!user) return res.status(404).json({ msg: "User not found" });
+
+//     if (user.editApprovalStatus === "pending") {
+//       return res.status(400).json({ msg: "An edit request is already pending approval" });
+//     }
+
+//     // --------------------- FILE UPLOAD HANDLING ---------------------
+//     if (req.files) {
+//       updates.documents = updates.documents || {};
+
+//       for (const field in req.files) {
+//         const file = req.files[field][0];
+//         updates.documents[field] = {
+//           name: file.originalname,
+//           type: file.mimetype,
+//           size: file.size,
+//           url: `/uploads/tmp/${file.filename}`, // temporary path
+//           lastModified: new Date(),
+//         };
+//       }
+//     }
+
+//     // --------------------- STORE PENDING DATA ---------------------
+//     user.pendingProfileUpdate = {
+//       requestType,
+//       remark,
+//       changes: updates, // actual fields user wants to edit
+//     };
+
+//     user.editApprovalStatus = "pending";
+
+//     await user.save();
+
+//     // --------------------- RESPONSE ---------------------
+//     res.status(200).json({
+//       msg: "Profile edit request submitted successfully. Waiting for admin approval.",
+//       requestData: user.pendingProfileUpdate,
+//     });
+
+//   } catch (err) {
+//     console.error("Edit request error:", err);
+//     res.status(500).json({ msg: "Server error", error: err.message });
+//   }
+// };
 export const requestProfileEdit = async (req, res) => {
   try {
+    console.log("🔹 requestProfileEdit called");
+    console.log("🔹 Params:", req.params);
+    console.log("🔹 Body:", req.body);
+
     const { userId } = req.params;
-    const updates = req.body;
+    const { requestType, remark } = req.body;
+
+    const allowedRequestTypes = [
+      "Application Details",
+      "Educational Details",
+      "Document Update",
+      "Other Changes",
+    ];
+
+    // Validate requestType
+    if (!requestType) {
+      console.log("❌ Missing requestType");
+      return res.status(400).json({ msg: "Missing request type" });
+    }
+
+    if (!allowedRequestTypes.includes(requestType)) {
+      console.log("❌ Invalid requestType:", requestType);
+      console.log("Allowed types:", allowedRequestTypes);
+      return res.status(400).json({ msg: "Invalid request type" });
+    }
+
+    // Validate remark
+    if (!remark || remark.trim().length < 5) {
+      console.log("❌ Remark too short:", remark);
+      return res.status(400).json({ msg: "Remark must be at least 5 characters" });
+    }
 
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ msg: "User not found" });
+    console.log("🔹 Fetched user:", user ? user._id : null);
+
+    if (!user) {
+      console.log("❌ User not found");
+      return res.status(404).json({ msg: "User not found" });
+    }
 
     if (user.editApprovalStatus === "pending") {
-      return res.status(400).json({ msg: "Edit already pending approval" });
+      console.log("❌ Edit request already pending");
+      return res.status(409).json({ msg: "An edit request is already pending approval" });
     }
 
-    // 🟢 If there are uploaded files, add file info to updates
-    if (req.files) {
-      updates.documents = updates.documents || {};
+    // Save pending request
+    user.pendingProfileUpdate = {
+      requestType,
+      remark,
+      changes: {}, // just a request, not real changes
+    };
 
-      for (const field in req.files) {
-        const file = req.files[field][0];
-        updates.documents[field] = {
-          name: file.originalname,
-          type: file.mimetype,
-          size: file.size,
-          url: `/uploads/tmp/${file.filename}`, // or move to permanent location
-          lastModified: new Date(),
-        };
-      }
-    }
-
-    // Store pending update
-    user.pendingProfileUpdate = updates;
     user.editApprovalStatus = "pending";
+
+    console.log("🔹 Saving user pendingProfileUpdate:", user.pendingProfileUpdate);
+
     await user.save();
 
+    console.log("✅ User saved successfully");
+
     res.status(200).json({
-      msg: "Profile edit request submitted. Waiting for admin approval.",
-      pendingData: user.pendingProfileUpdate,
+      msg: "Profile edit request submitted successfully. Waiting for admin approval.",
+      requestData: user.pendingProfileUpdate,
     });
   } catch (err) {
-    console.error("Edit request error:", err);
+    console.error("❌ Edit request error:", err);
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
 
+
 export const approveProfileEdit = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { action } = req.body; // "approve" or "reject"
+    const { action, adminRemark } = req.body; // frontend sends only action + remark
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
@@ -698,17 +800,40 @@ export const approveProfileEdit = async (req, res) => {
       return res.status(400).json({ msg: "No pending edits to approve" });
     }
 
+    const pending = user.pendingProfileUpdate || {};
+
+    // Map requestType to approved fields
+    const requestTypeToFieldsMap = {
+      "Application Details": ["application"],
+      "Educational Details": ["education"],
+      "Document Update": ["documents"],
+      "Other Changes": ["other"],
+    };
+
     if (action === "approve") {
-      // Replace current profile with pending one
-      user.profile = {
-        ...user.profile,
-        ...user.pendingProfileUpdate,
-      };
+      // Automatically set approvedFields based on requestType
+      const approvedFields =
+        requestTypeToFieldsMap[pending.requestType] || [];
+
+      user.approvedEditFields = approvedFields;
       user.editApprovalStatus = "approved";
-      user.pendingProfileUpdate = null;
+
+      user.pendingProfileUpdate = {
+        requestType: pending.requestType ?? null,
+        remark: pending.remark ?? null,
+        fields: user.approvedEditFields,
+        adminRemark: adminRemark ?? null,
+      };
     } else if (action === "reject") {
       user.editApprovalStatus = "rejected";
-      user.pendingProfileUpdate = null;
+      user.approvedEditFields = [];
+
+      user.pendingProfileUpdate = {
+        requestType: pending.requestType ?? null,
+        remark: pending.remark ?? null,
+        fields: [],
+        adminRemark: adminRemark ?? null,
+      };
     } else {
       return res.status(400).json({ msg: "Invalid action" });
     }
@@ -717,8 +842,10 @@ export const approveProfileEdit = async (req, res) => {
 
     res.status(200).json({
       msg: `Profile edit ${action}ed successfully`,
-      profile: user.profile,
+      pendingProfileUpdate: user.pendingProfileUpdate,
+      approvedEditFields: user.approvedEditFields,
     });
+
   } catch (err) {
     console.error("Approval error:", err);
     res.status(500).json({ msg: "Server error", error: err.message });
@@ -726,27 +853,100 @@ export const approveProfileEdit = async (req, res) => {
 };
 
 
-// Get all users who requested or have approved edits
+
+// // Get all users who requested or have approved edits
+// // Get all users who requested or have approved edits
+// export const getEditRequests = async (req, res) => {
+//   try {
+//     const users = await User.find({
+//       editApprovalStatus: { $in: ["pending", "approved"] },
+//     }).select("name email editApprovalStatus pendingProfileUpdate");
+
+//     if (users.length === 0) {
+//       return res.status(404).json({ msg: "No users found with edit requests or approvals" });
+//     }
+
+//     // Ensure pendingProfileUpdate is always an object
+//     const sanitizedUsers = users.map((user) => {
+//       const ppu = user.pendingProfileUpdate || {};
+//       return {
+//         ...user.toObject(),
+//         pendingProfileUpdate: {
+//           requestType: ppu.requestType ?? null,
+//           remark: ppu.remark ?? null,
+//           fields: ppu.fields ?? [],
+//           adminRemark: ppu.adminRemark ?? null,
+//         },
+//       };
+//     });
+
+//     // Log the sanitized users response
+//     console.log("Sanitized Users Response:", JSON.stringify(sanitizedUsers, null, 2));
+
+//     res.status(200).json({
+//       msg: "Fetched users with pending or approved edits",
+//       count: sanitizedUsers.length,
+//       users: sanitizedUsers,
+//     });
+//   } catch (err) {
+//     console.error("Fetch edit requests error:", err);
+//     res.status(500).json({ msg: "Server error", error: err.message });
+//   }
+// };
+// ✅ FIXED: Get all users with edit requests (including rejected and updated)
 export const getEditRequests = async (req, res) => {
   try {
+    // ✅ Include ALL statuses: pending, approved, rejected, updated
     const users = await User.find({
-      editApprovalStatus: { $in: ["pending", "approved"] },
-    }).select("name email editApprovalStatus pendingProfileUpdate");
+      pendingProfileUpdate: { $exists: true, $ne: null },
+      editApprovalStatus: { $in: ["pending", "approved", "rejected", "updated"] },
+    })
+    .select("name email editApprovalStatus pendingProfileUpdate createdAt updatedAt")
+    .sort({ createdAt: -1 }); // Most recent first
 
     if (users.length === 0) {
-      return res.status(404).json({ msg: "No users found with edit requests or approvals" });
+      return res.status(200).json({ 
+        msg: "No users found with edit requests",
+        count: 0,
+        users: [] 
+      });
     }
 
+    // Ensure pendingProfileUpdate is always an object
+    const sanitizedUsers = users.map((user) => {
+      const ppu = user.pendingProfileUpdate || {};
+      return {
+        ...user.toObject(),
+        pendingProfileUpdate: {
+          requestType: ppu.requestType ?? null,
+          remark: ppu.remark ?? null,
+          fields: ppu.fields ?? [],
+          adminRemark: ppu.adminRemark ?? null,
+        },
+      };
+    });
+
+    console.log("✅ Fetched users:", sanitizedUsers.length);
+    console.log("Status breakdown:", {
+      pending: sanitizedUsers.filter(u => u.editApprovalStatus === "pending").length,
+      approved: sanitizedUsers.filter(u => u.editApprovalStatus === "approved").length,
+      rejected: sanitizedUsers.filter(u => u.editApprovalStatus === "rejected").length,
+      updated: sanitizedUsers.filter(u => u.editApprovalStatus === "updated").length,
+    });
+
     res.status(200).json({
-      msg: "Fetched users with pending or approved edits",
-      count: users.length,
-      users,
+      msg: "Fetched users with edit requests",
+      count: sanitizedUsers.length,
+      users: sanitizedUsers,
     });
   } catch (err) {
-    console.error("Fetch edit requests error:", err);
+    console.error("❌ Fetch edit requests error:", err);
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
+
+// ✅ FIXED: Approve/Reject function should mark as "updated" not "approved"
+
 
 //get api for admin dashboard
 
@@ -758,6 +958,9 @@ export const getDashboardStats = async (req, res) => {
     const totalExams = await Exam.countDocuments();
     const totalUsers = await User.countDocuments();
     const totalRegistrations = await ExamRegistration.countDocuments();
+
+    //total edit 
+    
 
     // if you’ve got a separate model or field for edit requests
     const totalEditRequests = await User.countDocuments({
@@ -927,5 +1130,150 @@ export const updateExamStatusByRegisterNo = async (req, res) => {
   } catch (error) {
     console.error("❌ Error updating exam status:", error);
     res.status(500).json({ msg: "Internal server error", error: error.message });
+  }
+};
+
+
+
+
+export const editApprovedFields = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    // --------------------------------------------------
+    // ✔ Only FIRST approved section is editable
+    // --------------------------------------------------
+    const approvedFieldsRaw =
+      user.approvedEditFields?.length > 0
+        ? user.approvedEditFields
+        : user.pendingProfileUpdate?.fields || [];
+
+    if (!approvedFieldsRaw.length) {
+      return res.status(400).json({ msg: "No approved fields available to edit" });
+    }
+
+    const approvedField = approvedFieldsRaw[0]; // application / education / documents
+    console.log("🎯 Using approved field:", approvedField);
+
+    // Ensure profile sections exist
+    user.profile = user.profile || {};
+    user.profile.application = user.profile.application || {};
+    user.profile.education = user.profile.education || {};
+    user.profile.documents = user.profile.documents || {};
+
+    // --------------------------------------------------
+    // ✔ Merge JSON updates ONLY in approved field
+    // --------------------------------------------------
+    if (req.body[approvedField]) {
+      let parsedBody = req.body[approvedField];
+
+      if (typeof parsedBody === "string") {
+        parsedBody = JSON.parse(parsedBody);
+      }
+
+      user.profile[approvedField] = {
+        ...user.profile[approvedField],
+        ...parsedBody,
+      };
+      user.markModified(`profile.${approvedField}`);
+    }
+
+    // --------------------------------------------------
+    // ✔ Cloudinary file upload (works SAME as your main code)
+    // --------------------------------------------------
+    if (req.files && Object.keys(req.files).length > 0) {
+      const folderMap = {
+        photo: "users/photo",
+        signature: "users/signature",
+        id_proof: "users/identity",
+        education: "users/education",
+        address: "users/address",
+
+        registrationCertificate: "users/registrationCertificate",
+        mbbsCertificate: "users/mbbs",
+        pgCertificate: "users/pg",
+      };
+
+      for (const key in req.files) {
+        const file = req.files[key][0];
+        const filePath = path.resolve(file.path);
+
+        // skip files that do NOT belong to approved field (important!)
+        if (approvedField === "application" && key !== "registrationCertificate") {
+          fs.unlinkSync(filePath);
+          continue;
+        }
+        if (approvedField === "education" && !["mbbsCertificate", "pgCertificate"].includes(key)) {
+          fs.unlinkSync(filePath);
+          continue;
+        }
+
+        const upload = await cloudinary.uploader.upload(filePath, {
+          folder: folderMap[key] || "users",
+        });
+
+        const fileData = {
+          url: upload.secure_url,
+          public_id: upload.public_id,
+          name: file.originalname,
+          type: file.mimetype,
+          size: file.size,
+          lastModified: new Date(),
+        };
+
+        // Map fields properly
+        if (key === "registrationCertificate") {
+          user.profile.application.registrationCertificate = fileData;
+          user.markModified("profile.application.registrationCertificate");
+
+        } else if (key === "mbbsCertificate") {
+          user.profile.education.mbbs = user.profile.education.mbbs || {};
+          user.profile.education.mbbs.certificate = fileData;
+          user.markModified("profile.education.mbbs.certificate");
+
+        } else if (key === "pgCertificate") {
+          user.profile.education.pg = user.profile.education.pg || {};
+          user.profile.education.pg.certificate = fileData;
+          user.markModified("profile.education.pg.certificate");
+
+        } else {
+          // fallback for documents section if needed
+          user.profile.documents[key] = fileData;
+          user.markModified("profile.documents");
+        }
+
+        fs.unlinkSync(filePath); // remove temp file
+      }
+    }
+
+    // --------------------------------------------------
+    // ✔ Cleanup approval flags
+    // --------------------------------------------------
+    // user.approvedEditFields = [];
+    // if (user.pendingProfileUpdate) {
+    //   user.pendingProfileUpdate.fields = [];
+    // }
+    // user.editApprovalStatus = "approved";
+    user.approvedEditFields = [];
+    if (user.pendingProfileUpdate) {
+      user.pendingProfileUpdate.fields = [];
+    }
+    // ✅ Change status to 'updated' instead of 'approved'
+    user.editApprovalStatus = "updated";
+
+    await user.save();
+
+    res.status(200).json({
+      msg: "Profile updated successfully",
+      updatedField: approvedField,
+      profile: user.profile,
+    });
+
+  } catch (err) {
+    console.error("Edit after approval error:", err);
+    res.status(500).json({ msg: "Server error", error: err.message });
   }
 };

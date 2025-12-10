@@ -1,134 +1,273 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mock Test - Autosave</title>
+<meta charset="UTF-8" />
+<title>Admit Card</title>
+
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
-  .question { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-  .options label { display: block; margin-bottom: 10px; }
-  .status { padding: 10px; margin-bottom: 20px; border-radius: 5px; }
-  .status.success { background: #d4edda; color: #155724; }
-  .status.error { background: #f8d7da; color: #721c24; }
-  button { padding: 10px 20px; border: none; background: #007bff; color: #fff; border-radius: 5px; cursor: pointer; }
-  button:hover { background: #0056b3; }
+    body {
+        font-family: Arial, sans-serif;
+        background: #eee;
+        padding: 30px;
+    }
+
+    .admit-card {
+        width: 760px;
+        margin: auto;
+        background: #fff;
+        border: 1px solid #000;
+        padding: 0;
+    }
+
+    .header {
+        padding: 20px 30px;
+        border-bottom: 1px solid #000;
+        text-align: center;
+    }
+
+    .header img {
+        height: 70px;
+        object-fit: contain;
+    }
+
+    .title {
+        text-align: center;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 6px 0;
+        border-bottom: 1px solid #000;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+    }
+
+    .section-title {
+        background: #e9ecef;
+        font-weight: bold;
+        font-size: 12px;
+        padding: 6px 10px;
+        border-bottom: 1px solid #000;
+    }
+
+    td {
+        border-bottom: 1px solid #dee2e6;
+        padding: 6px 12px;
+        vertical-align: top;
+    }
+
+    .left-label {
+        background: #f8f9fa;
+        font-weight: bold;
+        width: 40%;
+    }
+
+    .photo-box img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        border: 1px solid #ccc;
+    }
+
+    .signature img {
+        width: 100%;
+        height: 60px;
+        object-fit: contain;
+    }
+
+    .venue-block div {
+        font-size: 10px;
+        margin-bottom: 2px;
+    }
+
+    .controller {
+        text-align: center;
+        font-weight: bold;
+        font-size: 10px;
+    }
+
+    .instructions-title {
+        font-size: 13px;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        color: #d00;
+    }
+
+    .instructions {
+        font-size: 10px;
+        line-height: 1.6;
+        padding-left: 20px;
+    }
+
 </style>
 </head>
+
 <body>
 
-<h1>Mock Test</h1>
-<div id="status" class="status" style="display:none;"></div>
-<div id="questions">Loading questions...</div>
+<div class="admit-card">
 
-<script>
-const GET_API_URL = "http://localhost:5000/api/mocktests"; 
-const SUBMIT_API_URL = "http://localhost:5000/api/mocktests/submit"; 
-const userId = "6909a8eb9fce0ecacc696e18"; 
-let mockTestId = ""; 
-const answers = {}; 
-const container = document.getElementById("questions");
+    <!-- Header -->
+    <div class="header">
+        <img src="https://via.placeholder.com/600x80?text=MICR+OFFICIAL+LOGO" />
+    </div>
 
-// Show status
-function showStatus(msg, type) {
-  const statusDiv = document.getElementById("status");
-  statusDiv.textContent = msg;
-  statusDiv.className = `status ${type}`;
-  statusDiv.style.display = "block";
-  setTimeout(() => statusDiv.style.display = "none", 2000);
-}
+    <!-- Title -->
+    <div class="title">ADMIT CARD</div>
 
-// Autosave
-function autosave(questionId, value) {
-  answers[questionId] = value;
-  if (!mockTestId) return;
+    <!-- Candidate Details Section -->
+    <div class="section-title">CANDIDATE DETAILS</div>
 
-  const payload = {
-    mockTestId,
-    userId,
-    answers: Object.entries(answers).map(([qId, sel]) => ({
-      questionId: qId,
-      selected: sel
-    })),
-    autoSave: true
-  };
+    <table>
+        <tr>
+            <td style="width:70%; border-right:1px solid #000;">
+                <table style="width:100%;">
+                    <tr>
+                        <td class="left-label">Candidate's Name</td>
+                        <td>Vishali N</td>
+                    </tr>
+                    <tr>
+                        <td class="left-label">Date of Birth</td>
+                        <td>10th Jul 1998</td>
+                    </tr>
+                    <tr>
+                        <td class="left-label">Application Number</td>
+                        <td>2NH1108VQQ</td>
+                    </tr>
+                    <tr>
+                        <td class="left-label">Registration Number</td>
+                        <td>AR4UEIFNGC</td>
+                    </tr>
+                    <tr>
+                        <td class="left-label">Gender</td>
+                        <td>Female</td>
+                    </tr>
+                    <tr>
+                        <td class="left-label">Nationality</td>
+                        <td>Indian</td>
+                    </tr>
+                </table>
+            </td>
 
-  fetch(SUBMIT_API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.json())
-  .then(() => showStatus("Autosaved successfully", "success"))
-  .catch(err => {
-    console.error("Autosave error:", err);
-    showStatus("Autosave failed", "error");
-  });
-}
+            <!-- QR Code -->
+            <td style="width:30%; text-align:center;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=2NH1108VQQ" />
+            </td>
+        </tr>
+    </table>
 
-// Render questions
-function renderQuestions(questions) {
-  container.innerHTML = "";
-  questions.forEach(q => {
-    const div = document.createElement("div");
-    div.className = "question";
+    <!-- Examination Details -->
+    <div class="section-title">EXAMINATION DETAILS</div>
 
-    let html = `<p><strong>${q.question}</strong></p>`;
-    let type = q.type === "objective" ? "single" : q.type;
+    <table>
+        <tr>
+            <td style="width:70%; border-right:1px solid #000;">
+                <table style="width:100%;">
+                    <tr>
+                        <td class="left-label">Paper Medium (Language)</td>
+                        <td>English</td>
+                    </tr>
+                    <tr>
+                        <td class="left-label">Course Name</td>
+                        <td>MICR Step 3A EXAM</td>
+                    </tr>
+                    <tr>
+                        <td class="left-label">Description</td>
+                        <td>MICR Step 3A EXAM</td>
+                    </tr>
+                    <tr>
+                        <td class="left-label">Date of Examination</td>
+                        <td>13th June 2025 (Friday)</td>
+                    </tr>
+                    <tr>
+                        <td class="left-label">Test Center Number</td>
+                        <td>002-Chennai</td>
+                    </tr>
+                </table>
+            </td>
 
-    if (type === "single") {
-      html += '<div class="options">';
-      q.options.forEach(opt => {
-        html += `<label><input type="radio" name="${q._id}" value="${opt}"> ${opt}</label>`;
-      });
-      html += '</div>';
-    } else if (type === "multiple") {
-      html += '<div class="options">';
-      q.options.forEach(opt => {
-        html += `<label><input type="checkbox" name="${q._id}" value="${opt}"> ${opt}</label>`;
-      });
-      html += '</div>';
-    } else if (type === "subjective") {
-      html += `<textarea name="${q._id}" rows="4" cols="50" placeholder="Type your answer here..."></textarea>`;
-    }
+            <!-- Photo & Signature -->
+            <td>
+                <div class="photo-box">
+                    <img src="https://via.placeholder.com/200x200?text=PHOTO" />
+                </div>
 
-    div.innerHTML = html;
-    container.appendChild(div);
+                <div class="signature">
+                    <img src="https://via.placeholder.com/200x60?text=SIGNATURE" />
+                    <div style="text-align:center; font-size:10px; font-weight:bold;">Candidate Signature</div>
+                </div>
+            </td>
+        </tr>
+    </table>
 
-    if (type === "single") {
-      document.getElementsByName(q._id).forEach(input => {
-        input.addEventListener("change", e => autosave(q._id, e.target.value));
-      });
-    } else if (type === "multiple") {
-      document.getElementsByName(q._id).forEach(input => {
-        input.addEventListener("change", () => {
-          const selected = Array.from(document.getElementsByName(q._id))
-                                .filter(i => i.checked)
-                                .map(i => i.value);
-          autosave(q._id, selected);
-        });
-      });
-    } else if (type === "subjective") {
-      document.getElementsByName(q._id)[0].addEventListener("input", e => autosave(q._id, e.target.value));
-    }
-  });
-}
+    <!-- Venue + Controller -->
+    <table>
+        <tr>
+            <td style="width:70%; border-right:1px solid #000;">
+                <b>Venue of Center:</b>
+                <div class="venue-block">
+                    <div>Rajalakshmi Institute of Technology</div>
+                    <div>Kuthambakkam Post, (Opp. to EVP Film City)</div>
+                    <div>Poonamallee, Chennai - 600 124</div>
+                    <div>Reception Phone Number: 91-44-67181600, 67181601</div>
+                    <div>https://goo.gl/maps/U1HfyttYMyfsSbY57</div>
+                </div>
+            </td>
+            <td class="controller">Examination Controller</td>
+        </tr>
+    </table>
 
-// Fetch questions
-fetch(GET_API_URL)
-  .then(res => res.json())
-  .then(data => {
-    if (!Array.isArray(data) || data.length === 0) throw new Error("No mock tests found");
-    const test = data[0]; // use the first mock test
-    if (!test.questions) throw new Error("Invalid test format");
-    mockTestId = test._id;
-    renderQuestions(test.questions);
-  })
-  .catch(err => {
-    console.error("Error fetching questions:", err);
-    container.innerHTML = "<p>Failed to load questions. Please try again later.</p>";
-  });
+    <!-- Exam Schedule -->
+    <div class="section-title">EXAMINATION SCHEDULE</div>
 
-</script>
+    <table>
+        <tr>
+            <td class="left-label" style="width:35%;">Date of Exam</td>
+            <td>13th June 2025 (Friday)</td>
+        </tr>
+        <tr>
+            <td class="left-label">Reporting Time at Center</td>
+            <td>08:30 AM</td>
+        </tr>
+        <tr>
+            <td class="left-label">Gate Closing Time</td>
+            <td>09:30 AM</td>
+        </tr>
+        <tr>
+            <td class="left-label">Paper 1</td>
+            <td>Paper 1 - Essential Radiology ( 9:45 AM to 10:45 AM )</td>
+        </tr>
+        <tr>
+            <td class="left-label">Break</td>
+            <td>Lunch Break (10:45 AM to 11:00 AM)</td>
+        </tr>
+        <tr>
+            <td class="left-label">Paper 2</td>
+            <td>Paper 2 - Long cases Reporting ( 11:00 AM to 12:50 PM )</td>
+        </tr>
+    </table>
+
+    <!-- Instructions -->
+    <div class="instructions-title">IMPORTANT INSTRUCTIONS FOR CANDIDATES</div>
+
+    <div class="instructions">
+        1. Examinees must possess valid ID (Aadhar Card / Passport).<br>
+        2. Do not carry mobile phones or smart watches into exam hall.<br>
+        3. Keep belongings at the designated place.<br>
+        4. Arrive at 8:30 AM for ID verification (completed by 9:30 AM).<br>
+        5. Bring hall ticket + photocopy of Aadhar/Passport + original ID.<br>
+        6. At 9:40 AM, candidates will be guided to exam hall.<br>
+        7. Entry closes 15 minutes after exam starts.<br>
+        8. No leaving the hall for first 60 minutes.<br>
+        9. Impersonation will be reported to police.<br>
+        10. Preserve e-copy of hall ticket.<br>
+        11. No negative marking.<br>
+    </div>
+
+</div>
+
 </body>
 </html>
