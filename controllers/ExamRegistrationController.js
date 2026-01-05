@@ -78,8 +78,8 @@ export const verifyPaymentAndRegister = async (req, res) => {
       remarks,
       centers,
       //new field
-        pgDuration,
-  pgRadiologyTraining, 
+        pgDuration, 
+   pgRadiologyTraining
     } = req.body;
 
     console.log("🟢 Payment Verification Request Received");

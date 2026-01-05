@@ -16,7 +16,7 @@ const router = express.Router();
 // Routes
 router.post("/create-order", createOrder);
 
-router.post("/verify-payment",   upload.single("pgRadiologyFile"),verifyPaymentAndRegister);
+router.post("/verify-payment",   upload.single("pgRadiologyTraining"),verifyPaymentAndRegister);
 
 ;
                // Create new registration
