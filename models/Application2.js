@@ -33,8 +33,8 @@ const applicationSchema2 = new mongoose.Schema({
          // New
 
         // New
-  paper_medium: { type: String },  
-  course_name: { type: String },
+End_time:{type:String},
+Date:{type:String},
     course_name: { type: String },
     Exam_Timing: { type: String },  
  Batch_Name: { type: String },  

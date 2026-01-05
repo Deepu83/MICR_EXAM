@@ -3,7 +3,7 @@ import User from "../models/User.js";
 import mongoose from "mongoose";
 import Razorpay from "razorpay";
 import { createHmac } from "crypto";
-
+import cloudinary from "../config/cloudinary.js";
 // import User from "../models/User.js";
 
 import dotenv from "dotenv";
@@ -76,6 +76,9 @@ export const verifyPaymentAndRegister = async (req, res) => {
       country,
       remarks,
       centers,
+      //new field
+        pgDuration,
+  pgRadiologyTraining, 
     } = req.body;
 
     console.log("🟢 Payment Verification Request Received");
@@ -216,6 +219,14 @@ examDetails: {
   details: exam.details || {},
   instructions: exam.instructions || [],
   stats: exam.stats || {},
+
+  // new field 
+  pgDuration: pgDuration || 0,
+pgRadiologyTraining: pgRadiologyTraining || {
+  fileUrl: "",
+  fileName: "",
+  uploadedAt: null,
+},
 },
 
         
@@ -263,6 +274,9 @@ examDetails: {
   details: exam.details || {},
   instructions: exam.instructions || [],
   stats: exam.stats || {},
+
+  //new 
+  
 },
 
         applicationInfo: {
@@ -275,6 +289,12 @@ examDetails: {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
+        pgDuration: pgDuration || 0,
+pgRadiologyTraining: pgRadiologyTraining || {
+  fileUrl: "",
+  fileName: "",
+  uploadedAt: null,
+},
 
         //add 
         centers,
@@ -343,6 +363,14 @@ examDetails: {
   details: exam.details || {},
   instructions: exam.instructions || [],
   stats: exam.stats || {},
+
+  //
+  pgDuration: pgDuration || 0,
+pgRadiologyTraining: pgRadiologyTraining || {
+  fileUrl: "",
+  fileName: "",
+  uploadedAt: null,
+},
 },
 
         applicationInfo: {
@@ -386,6 +414,9 @@ examDetails: {
   details: exam.details || {},
   instructions: exam.instructions || [],
   stats: exam.stats || {},
+
+
+
 },
 
         applicationInfo: {
@@ -398,6 +429,12 @@ examDetails: {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
+        pgDuration: pgDuration || 0,
+pgRadiologyTraining: pgRadiologyTraining || {
+  fileUrl: "",
+  fileName: "",
+  uploadedAt: null,
+},
         centers,
       });
 
@@ -471,6 +508,13 @@ examDetails: {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
+
+        pgDuration: pgDuration || 0,
+pgRadiologyTraining: pgRadiologyTraining || {
+  fileUrl: "",
+  fileName: "",
+  uploadedAt: null,
+},
 
         //add 
         centers,

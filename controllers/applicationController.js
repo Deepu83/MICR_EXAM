@@ -5,120 +5,10 @@
 // import csv from "csvtojson";
 // import fs from "fs";
 
-// export const uploadApplicationZip = async (req, res) => {
-//   try {
-//     if (!req.file) {
-//       return res.status(400).json({ success: false, error: "ZIP file is required" });
-//     }
-
-//     const zip = new AdmZip(req.file.path);
-//     const zipEntries = zip.getEntries();
-
-//     let csvEntry = null;
-//     const fileMapByName = {}; // map by filename only
-//     const validExt = [".jpg", ".jpeg", ".png", ".jfif", ".jpe"];
-
-//     // Prepare ZIP file map by filename only (lowercase)
-//     zipEntries.forEach((entry) => {
-//       let name = entry.entryName.replace(/\\/g, "/").trim();
-//       const lowerName = name.toLowerCase();
-//       const baseName = lowerName.split("/").pop();
-
-//       if (lowerName.includes("__macosx") || lowerName.includes("._")) return;
-
-//       if (lowerName.endsWith(".csv")) {
-//         csvEntry = entry;
-//         return;
-//       }
-
-//       if (validExt.some((ext) => baseName.endsWith(ext))) {
-//         fileMapByName[baseName] = entry;
-//       }
-//     });
-
-//     if (!csvEntry) {
-//       return res.status(400).json({ success: false, error: "CSV file missing in ZIP" });
-//     }
-
-//     const tempCsv = `./tmp_${Date.now()}.csv`;
-//     fs.writeFileSync(tempCsv, csvEntry.getData());
-//     const rows = await csv().fromFile(tempCsv);
-
-//     const uploadFromZip = async (entry) => {
-//       return new Promise((resolve, reject) => {
-//         cloudinary.uploader.upload_stream(
-//           {
-//             resource_type: "image",
-//             allowed_formats: ["jpg", "jpeg", "png", "jfif"],
-//             format: "jpg",
-//           },
-//           (err, result) => (err ? reject(err) : resolve(result.secure_url))
-//         ).end(entry.getData());
-//       });
-//     };
-
-//     const savedRecords = await Promise.all(
-//       rows.map(async (row) => {
-//         let photoUrl = "";
-//         let signatureUrl = "";
-
-//         // Extract just the filename from CSV path
-//         const imageFileName = row.image?.split("/").pop().toLowerCase().trim();
-//         const signatureFileName = row.signature?.split("/").pop().toLowerCase().trim();
-
-//         if (imageFileName && fileMapByName[imageFileName]) {
-//           photoUrl = await uploadFromZip(fileMapByName[imageFileName]);
-//         } else {
-//           console.warn(`Image not found in ZIP: ${row.image}`);
-//         }
-
-//         if (signatureFileName && fileMapByName[signatureFileName]) {
-//           signatureUrl = await uploadFromZip(fileMapByName[signatureFileName]);
-//         } else {
-//           console.warn(`Signature not found in ZIP: ${row.signature}`);
-//         }
-
-//         const nameParts = row.name?.trim().split(" ") || [];
-//         const firstName = nameParts.shift() || "";
-//         const lastName = nameParts.join(" ") || "";
-
-//         return Application.create({
-//           first_name: firstName,
-//           last_name: lastName,
-//           email: row.email || "",
-//           gender: row.gender || "",
-//           phone: row.phone || "",
-//           dob: row.dob || "",
-//           username: row.username || "",
-//           registration_number: row.registration_number || "",
-//           photoUrl,
-//           signatureUrl,
-//         });
-//       })
-//     );
-
-//     fs.unlinkSync(tempCsv);
-//     fs.unlinkSync(req.file.path);
-
-//     return res.json({
-//       success: true,
-//       message: "ZIP processed successfully",
-//       count: savedRecords.length,
-//       records: savedRecords,
-//     });
-//   } catch (error) {
-//     console.error("❌ Error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       error: "Server error",
-//       details: error.message,
-//     });
-//   }
-// };
 
 
 import AdmZip from "adm-zip";
-import Application from "../models/Application.js";
+import Application from "../models/Application2.js";
 import cloudinary from "../config/cloudinary.js";
 import csv from "csvtojson";
 import fs from "fs";
@@ -309,6 +199,11 @@ export const uploadApplicationZip = async (req, res) => {
       const nameParts = (row.name || "").trim().split(/\s+/);
       const firstName = nameParts.shift() || "";
       const lastName = nameParts.join(" ") || "";
+      const newDob = row.dob;
+      const newDate = row.Date;
+
+
+      
 
       const record = await Application.create({
         first_name: firstName,
@@ -316,9 +211,14 @@ export const uploadApplicationZip = async (req, res) => {
         email: row.email || "",
         gender: row.gender || "",
         phone: row.phone || "",
-        dob: row.dob || "",
+        dob: newDob.replace("�","") || "",
         username: row.username || "",
         registration_number: row.registration_number || "",
+        Date:newDate.replace("�","") || "",
+        reporting_time:row.reporting_time||"",
+        Exam_Timing:row.exam_time ||"",
+        End_time:row.end_time || "",
+        Batch_Name:row.Batch || "",
         photoUrl,
         signatureUrl,
       });

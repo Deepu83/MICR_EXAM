@@ -13,7 +13,6 @@ const ExamRegistrationSchema = new mongoose.Schema(
       required: true,
     },
    
-   
       examId: { type: mongoose.Schema.Types.ObjectId, ref: "Exam" },
 
     examDetails: {
@@ -101,6 +100,20 @@ const ExamRegistrationSchema = new mongoose.Schema(
   type: Number,
   default: 1,
 },
+
+// Add new file 
+pgRadiologyTraining: {
+  fileUrl: { type: String, default: "" },
+  fileName: { type: String, default: "" },
+  uploadedAt: { type: Date, default: null }
+},
+
+pgDuration: {
+  type: Number, // duration in months or years
+  required: false,
+  min: 0
+},
+
 //
 allowed: { type: Boolean, default: false } // admin sets this to true when exam is allowed
 
