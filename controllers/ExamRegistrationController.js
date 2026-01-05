@@ -5,6 +5,7 @@ import Razorpay from "razorpay";
 import { createHmac } from "crypto";
 import cloudinary from "../config/cloudinary.js";
 // import User from "../models/User.js";
+import fs from "fs";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -102,6 +103,30 @@ export const verifyPaymentAndRegister = async (req, res) => {
     // ✅ Fetch user
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ msg: "User not found" });
+
+    //clodunary image
+    // ✅ Upload PG Radiology file to Cloudinary (👇 YAHAN)
+let pgFileData = {
+  fileUrl: "",
+  fileName: "",
+  uploadedAt: null,
+};
+
+if (req.file) {
+  const result = await cloudinary.uploader.upload(req.file.path, {
+    folder: "pg_radiology",
+    resource_type: "raw",
+  });
+
+  pgFileData = {
+    fileUrl: result.secure_url,
+    fileName: req.file.originalname,
+    uploadedAt: new Date(),
+  };
+
+  fs.unlinkSync(req.file.path);
+}
+
 
 
     //add exam
@@ -221,12 +246,7 @@ examDetails: {
   stats: exam.stats || {},
 
   // new field 
-  pgDuration: pgDuration || 0,
-pgRadiologyTraining: pgRadiologyTraining || {
-  fileUrl: "",
-  fileName: "",
-  uploadedAt: null,
-},
+
 },
 
         
@@ -240,7 +260,8 @@ pgRadiologyTraining: pgRadiologyTraining || {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
-        
+          pgDuration: pgDuration || 0,
+  pgRadiologyTraining: pgFileData,
         centers,
       });
 
@@ -289,12 +310,8 @@ pgRadiologyTraining: pgRadiologyTraining || {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
-        pgDuration: pgDuration || 0,
-pgRadiologyTraining: pgRadiologyTraining || {
-  fileUrl: "",
-  fileName: "",
-  uploadedAt: null,
-},
+  pgDuration: pgDuration || 0,
+  pgRadiologyTraining: pgFileData,
 
         //add 
         centers,
@@ -365,12 +382,7 @@ pgRadiologyTraining: pgRadiologyTraining || {
   stats: exam.stats || {},
 
   //
-  pgDuration: pgDuration || 0,
-pgRadiologyTraining: pgRadiologyTraining || {
-  fileUrl: "",
-  fileName: "",
-  uploadedAt: null,
-},
+
 },
 
         applicationInfo: {
@@ -383,6 +395,8 @@ pgRadiologyTraining: pgRadiologyTraining || {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
+          pgDuration: pgDuration || 0,
+  pgRadiologyTraining: pgFileData,
         centers,
       });
 
@@ -429,12 +443,8 @@ pgRadiologyTraining: pgRadiologyTraining || {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
-        pgDuration: pgDuration || 0,
-pgRadiologyTraining: pgRadiologyTraining || {
-  fileUrl: "",
-  fileName: "",
-  uploadedAt: null,
-},
+  pgDuration: pgDuration || 0,
+  pgRadiologyTraining: pgFileData,
         centers,
       });
 
@@ -509,12 +519,8 @@ pgRadiologyTraining: pgRadiologyTraining || {
           paymentStatus: "paid",
         },
 
-        pgDuration: pgDuration || 0,
-pgRadiologyTraining: pgRadiologyTraining || {
-  fileUrl: "",
-  fileName: "",
-  uploadedAt: null,
-},
+  pgDuration: pgDuration || 0,
+  pgRadiologyTraining: pgFileData,
 
         //add 
         centers,

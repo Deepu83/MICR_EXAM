@@ -8,13 +8,15 @@ import {
   verifyPaymentAndRegister,
   getAdmitCard
 } from "../controllers/ExamRegistrationController.js";
+import multer from "multer";
 
+const upload = multer({ dest: "uploads/" });
 const router = express.Router();
 
 // Routes
 router.post("/create-order", createOrder);
 
-router.post("/verify-payment", verifyPaymentAndRegister);
+router.post("/verify-payment",   upload.single("pgRadiologyFile"),verifyPaymentAndRegister);
 
 ;
                // Create new registration
