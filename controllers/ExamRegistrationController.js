@@ -79,8 +79,8 @@ export const verifyPaymentAndRegister = async (req, res) => {
       remarks,
       centers,
       //new field
-  //       pgDuration, 
-  //  pgRadiologyTraining
+        pgDuration, 
+   pgRadiologyTraining
     } = req.body;
 
     console.log("🟢 Payment Verification Request Received");
@@ -107,26 +107,26 @@ export const verifyPaymentAndRegister = async (req, res) => {
 
     //clodunary image
     // ✅ Upload PG Radiology file to Cloudinary (👇 YAHAN)
-// let pgFileData = {
-//   fileUrl: "",
-//   fileName: "",
-//   uploadedAt: null,
-// };
+let pgFileData = {
+  fileUrl: "",
+  fileName: "",
+  uploadedAt: null,
+};
 
-// if (req.file) {
-//   const result = await cloudinary.uploader.upload(req.file.path, {
-//     folder: "pg_radiology",
-//     resource_type: "raw",
-//   });
+if (req.file) {
+  const result = await cloudinary.uploader.upload(req.file.path, {
+    folder: "pg_radiology",
+    resource_type: "raw",
+  });
 
-//   pgFileData = {
-//     fileUrl: result.secure_url,
-//     fileName: req.file.originalname,
-//     uploadedAt: new Date(),
-//   };
+  pgFileData = {
+    fileUrl: result.secure_url,
+    fileName: req.file.originalname,
+    uploadedAt: new Date(),
+  };
 
-//   fs.unlinkSync(req.file.path);
-// }
+  fs.unlinkSync(req.file.path);
+}
 
 
 
@@ -143,31 +143,26 @@ export const verifyPaymentAndRegister = async (req, res) => {
     // const exam = await Exam.findById(examId);
 
     // if (!exam) return res.status(404).json({ msg: "Exam not found" });
-console.log("Received examId:", examId);
+ console.log("Received examId:", examId);
 
 if (!examId || typeof examId !== "string" || !examId.trim()) {
   return res.status(400).json({ msg: "Invalid or missing examId" });
 }
 
-let exam = await Exam.findById(examId);
+let exam = null;
 let childExams = [];
 
-// 🔁 If not a real exam _id → treat as combinedExamId
+// 1️⃣ Try as real exam _id
+exam = await Exam.findById(examId);
+
+// 2️⃣ If not found → treat as combinedExamId
 if (!exam) {
   childExams = await Exam.find({ combinedExamId: examId });
 
   if (childExams.length === 0) {
     return res.status(404).json({ msg: "Exam not found" });
   }
-
-  // ✅ IMPORTANT FIX:
-  // Promote first child as parent reference
-  exam = childExams[0];
 }
-
-// ✅ From here → exam is ALWAYS defined
-// ✅ childExams will be empty for single exams
-// ✅ childExams will have data for combined exams
 
 // 3️⃣ Flag to decide flow
 
@@ -291,8 +286,8 @@ examDetails: {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
-  //         pgDuration: pgDuration || 0,
-  // pgRadiologyTraining: pgFileData,
+          pgDuration: pgDuration || 0,
+  pgRadiologyTraining: pgFileData,
         centers,
       });
 
@@ -341,8 +336,8 @@ examDetails: {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
-  // pgDuration: pgDuration || 0,
-  // pgRadiologyTraining: pgFileData,
+  pgDuration: pgDuration || 0,
+  pgRadiologyTraining: pgFileData,
 
         //add 
         centers,
@@ -426,9 +421,11 @@ examDetails: {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
-          pgDuration: pgDuration || 0,
-  pgRadiologyTraining: pgFileData,
+  
         centers,
+         pgDuration: pgDuration || 0,
+  pgRadiologyTraining: pgFileData,
+
       });
 
       // Save registration for Part B
@@ -474,8 +471,9 @@ examDetails: {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
-  pgDuration: pgDuration || 0,
+ pgDuration: pgDuration || 0,
   pgRadiologyTraining: pgFileData,
+
         centers,
       });
 
@@ -550,7 +548,8 @@ examDetails: {
           paymentStatus: "paid",
         },
 
-  pgDuration: pgDuration || 0,
+
+ pgDuration: pgDuration || 0,
   pgRadiologyTraining: pgFileData,
 
         //add 
@@ -566,6 +565,7 @@ examDetails: {
         case "1A":
           user.progression.step1 = user.progression.step1 || {};
           user.progression.step1.papers = user.progression.step1.papers || {};
+
 
           // 🧩 Re-fillup logic for Paper 1 if failed
           if (user.progression.step1.papers.paper1?.status === "failed") {

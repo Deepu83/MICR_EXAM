@@ -6,6 +6,7 @@ import ExamRegistration from "../models/ExamRegistration.js";
 import mongoose from "mongoose";
 
 
+
 export const createExam = async (req, res) => {
   try {
     const examData = { ...req.body };
