@@ -1,18 +1,125 @@
 import Exam from "../models/Exam.js";
 import ExamRegistration from "../models/ExamRegistration.js";
 
-// Create new exam
+// // Create new exam
+
+import mongoose from "mongoose";
+
+
 export const createExam = async (req, res) => {
   try {
+    const examData = { ...req.body };
 
+    // 🔴 Year is mandatory
+    if (!examData.year) {
+      return res.status(400).json({
+        message: "Year is required",
+      });
+    }
 
-    const exam = new Exam(req.body);
+    let stepGroup = null;
+
+    switch (examData.examCode) {
+      case "1":
+      case "1A":
+      case "1B":
+        stepGroup = "STEP1";
+        break;
+
+      case "2":
+        stepGroup = "STEP2";
+        break;
+
+      case "3":
+        stepGroup = "STEP3";
+        break;
+
+      case "3A":
+        stepGroup = "STEP3A";
+        break;
+
+      case "3B":
+        stepGroup = "STEP3B";
+        break;
+
+      default:
+        stepGroup = null;
+    }
+
+    /* =====================================================
+       🔥 STEP-3 (PARENT)
+       ===================================================== */
+    if (examData.examCode === "3") {
+      examData.combinedExamId = new mongoose.Types.ObjectId();
+      examData.stepGroup = "STEP3";
+      examData.parentId = null; // ROOT
+    }
+
+    /* =====================================================
+       🔥 STEP-3A / STEP-3B (CHILDREN OF STEP-3)
+       ===================================================== */
+    else if (examData.examCode === "3A" || examData.examCode === "3B") {
+
+      // 🔴 STEP-3 MUST exist
+      const step3Parent = await Exam.findOne({
+        examCode: "3",
+        year: examData.year,
+      });
+
+      if (!step3Parent) {
+        return res.status(400).json({
+          message: "Create STEP-3 first with the same year",
+        });
+      }
+
+      // ✅ Own combinedExamId (separate for 3A and 3B)
+      const existingExam = await Exam.findOne({
+        examCode: examData.examCode,
+        year: examData.year,
+      });
+
+      examData.combinedExamId = existingExam
+        ? existingExam.combinedExamId
+        : new mongoose.Types.ObjectId();
+
+      // ✅ BOTH 3A & 3B point to STEP-3
+      examData.parentId = step3Parent._id;
+      examData.step3CombinedId = step3Parent.combinedExamId;
+
+      examData.stepGroup = stepGroup;
+    }
+
+    /* =====================================================
+       🔥 STEP-1 & STEP-2 (UNCHANGED)
+       ===================================================== */
+    else if (stepGroup) {
+      const existingExam = await Exam.findOne({
+        stepGroup,
+        year: examData.year,
+      });
+
+      examData.combinedExamId = existingExam
+        ? existingExam.combinedExamId
+        : new mongoose.Types.ObjectId();
+
+      examData.stepGroup = stepGroup;
+    }
+
+    const exam = new Exam(examData);
     await exam.save();
-    res.status(201).json({ message: "Exam created successfully", exam });
+
+    res.status(201).json({
+      message: "Exam created successfully",
+      exam,
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message,
+    });
   }
 };
+
 
 
 
@@ -38,62 +145,9 @@ export const getAllExams = async (req, res) => {
   }
 };
 
+//
 
 
-
-// export const getAllExams = async (req, res) => {
-//   try {
-//     const exams = await Exam.find();
-
-//     // ✅ Total exams
-//     const totalExams = exams.length;
-
-//     // ✅ Active exams (status === "Open")
-//     const activeExams = exams.filter(
-//       exam => exam?.status?.toLowerCase() === "open"
-//     ).length;
-
-//     // Map exams to add requiredLevel
-//     const examsWithRequiredLevel = exams.map(exam => {
-//       let requiredLevel = null;
-
-//       switch (exam.examCode) {
-//         case "1A":
-//           requiredLevel = "1B";
-//           break;
-//         case "1B":
-//           requiredLevel = "1A";
-//           break;
-//         case "3A":
-//           requiredLevel = "3B";
-//           break;
-//         case "3B":
-//           requiredLevel = "3A";
-//         case "2":
-//           requiredLevel="2";
-//            break;
-//         case "3":
-//           requiredLevel="3";
-//           break;
-//         default:
-//           requiredLevel = null;
-//       }
-
-//       return {
-//         ...exam._doc,
-//         requiredLevel,
-//       };
-//     });
-
-//     res.status(200).json({
-//       totalExams,
-//       activeExams,
-//       exams: examsWithRequiredLevel,
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 
 export const getExamByCode = async (req, res) => {
@@ -115,6 +169,40 @@ export const getExamByCode = async (req, res) => {
   } catch (error) {
     console.error("Error fetching exam:", error);
     res.status(500).json({ message: error.message });
+  }
+};
+//for 
+export const getExamsByCombinedId = async (req, res) => {
+  try {
+    const { combinedExamId } = req.params;
+
+    if (!combinedExamId) {
+      return res.status(400).json({
+        message: "combinedExamId is required"
+      });
+    }
+
+    const exams = await Exam.find({
+      combinedExamId
+    }).sort({ dateOfExam: 1 }); // optional sorting
+
+    if (!exams || exams.length === 0) {
+      return res.status(404).json({
+        message: "No exams found for this combinedExamId"
+      });
+    }
+
+    res.status(200).json({
+      combinedExamId,
+      totalPapers: exams.length,
+      exams
+    });
+
+  } catch (error) {
+    console.error("Error fetching exams by combinedExamId:", error);
+    res.status(500).json({
+      message: error.message
+    });
   }
 };
 

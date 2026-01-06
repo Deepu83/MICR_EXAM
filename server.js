@@ -26,12 +26,7 @@ app.use(cookieParser());
 
 
 
-//express rate limit globally 
-// const limiter = rateLimit({
-//   windowMs: 10 * 1000, // 10 seconds
-//   max: 10,
-//   message: "Too many requests, try again later",
-// });
+
 const tokenBucket = new RateLimiterMemory({
   points: 1000,          // 5 requests allowed
   duration: 10,       // refill bucket every 10 seconds

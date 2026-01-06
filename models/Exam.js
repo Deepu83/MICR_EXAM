@@ -1,13 +1,9 @@
-
-// export default mongoose.model("Exam", examSchema);
 import mongoose from "mongoose";
-
 const examSchema = new mongoose.Schema({
     examName: { type: String, required: false },
   code: { type: String, required: false },
    subject: String,
     internationalAmount: Number, 
-  
   nationalAmount: Number,
   currency: String,
   // examCode: String,
@@ -17,16 +13,31 @@ const examSchema = new mongoose.Schema({
       required: true,
     },
   backendCode: String,
-  requiredLevel: String,
+parentId: {
+  type: mongoose.Schema.Types.ObjectId,
+  default: null
+}
+,
+  combinedExamId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    index: true,
+  },
 
+  
+
+    // 🔥 NEW (VERY IMPORTANT)
+    year: {
+      type: Number,
+      required: true,
+    },
+
+
+  requiredLevel: String,
   paperMedium: { type: String }, 
   dateOfExam: { type: String },       // 📅 Exam date (can store in 'YYYY-MM-DD' format)
   breakTime: { type: String },        // ⏸ Example: "15 minutes"
   gateClosingTime: { type: String },  // 🚪 Example: "09:30 AM"
-
-
-
-
   centers: {
     type: Map,
     of: [
@@ -38,7 +49,6 @@ const examSchema = new mongoose.Schema({
       }
     ]
   },
-
   // ✅ Updated structure to match your screenshot
   details: {
     module: { type: String },
@@ -51,21 +61,17 @@ const examSchema = new mongoose.Schema({
       mode: { type: String },
 
     },
-    
-
     // ✅ Array of instructions
     instructions: [{ type: String }],
-
-
   }, 
    status: { type: String },
   registrationCount: {
       type: Number,
       default: 0,
     },
-  
 },
 { strict: false } // ✅ <--- ALLOW EXTRA FIELDS
+
 );
 
 export default mongoose.model("Exam", examSchema);

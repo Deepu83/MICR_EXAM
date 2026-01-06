@@ -3,6 +3,8 @@ import User from "../models/User.js";
 import mongoose from "mongoose";
 import Razorpay from "razorpay";
 import { createHmac } from "crypto";
+
+import Exam from "../models/Exam.js";
 import cloudinary from "../config/cloudinary.js";
 // import User from "../models/User.js";
 import fs from "fs";
@@ -56,7 +58,6 @@ export const createOrder = async (req, res) => {
 };
 
 
-import Exam from "../models/Exam.js";
 
 
 
@@ -78,8 +79,8 @@ export const verifyPaymentAndRegister = async (req, res) => {
       remarks,
       centers,
       //new field
-        pgDuration, 
-   pgRadiologyTraining
+  //       pgDuration, 
+  //  pgRadiologyTraining
     } = req.body;
 
     console.log("🟢 Payment Verification Request Received");
@@ -106,42 +107,72 @@ export const verifyPaymentAndRegister = async (req, res) => {
 
     //clodunary image
     // ✅ Upload PG Radiology file to Cloudinary (👇 YAHAN)
-let pgFileData = {
-  fileUrl: "",
-  fileName: "",
-  uploadedAt: null,
-};
+// let pgFileData = {
+//   fileUrl: "",
+//   fileName: "",
+//   uploadedAt: null,
+// };
 
-if (req.file) {
-  const result = await cloudinary.uploader.upload(req.file.path, {
-    folder: "pg_radiology",
-    resource_type: "raw",
-  });
+// if (req.file) {
+//   const result = await cloudinary.uploader.upload(req.file.path, {
+//     folder: "pg_radiology",
+//     resource_type: "raw",
+//   });
 
-  pgFileData = {
-    fileUrl: result.secure_url,
-    fileName: req.file.originalname,
-    uploadedAt: new Date(),
-  };
+//   pgFileData = {
+//     fileUrl: result.secure_url,
+//     fileName: req.file.originalname,
+//     uploadedAt: new Date(),
+//   };
 
-  fs.unlinkSync(req.file.path);
-}
+//   fs.unlinkSync(req.file.path);
+// }
 
 
 
     //add exam
     // ✅ Fetch exam details
     // const exam = await Exam.findOne({ backendCode: examId }); // or Exam.findById(examId) depending on your structure
-    console.log("Received examId:", examId, typeof examId);
+    // console.log("Received examId:", examId, typeof examId);
 
-    if (!examId || typeof examId !== "string" || !examId.trim()) {
-      return res.status(400).json({ msg: "Invalid or missing examId" });
-    }
+    // if (!examId || typeof examId !== "string" || !examId.trim()) {
+    //   return res.status(400).json({ msg: "Invalid or missing examId" });
+    // }
 
-    // Use correct query depending on what frontend sends:
-    const exam = await Exam.findById(examId);
+    // // Use correct query depending on what frontend sends:
+    // const exam = await Exam.findById(examId);
 
-    if (!exam) return res.status(404).json({ msg: "Exam not found" });
+    // if (!exam) return res.status(404).json({ msg: "Exam not found" });
+console.log("Received examId:", examId);
+
+if (!examId || typeof examId !== "string" || !examId.trim()) {
+  return res.status(400).json({ msg: "Invalid or missing examId" });
+}
+
+let exam = await Exam.findById(examId);
+let childExams = [];
+
+// 🔁 If not a real exam _id → treat as combinedExamId
+if (!exam) {
+  childExams = await Exam.find({ combinedExamId: examId });
+
+  if (childExams.length === 0) {
+    return res.status(404).json({ msg: "Exam not found" });
+  }
+
+  // ✅ IMPORTANT FIX:
+  // Promote first child as parent reference
+  exam = childExams[0];
+}
+
+// ✅ From here → exam is ALWAYS defined
+// ✅ childExams will be empty for single exams
+// ✅ childExams will have data for combined exams
+
+// 3️⃣ Flag to decide flow
+
+
+
 
     // ✅ Improved existing registration + re-fill logic
     const lastReg = await ExamRegistration.findOne({ userId, examId }).sort({ createdAt: -1 });
@@ -260,8 +291,8 @@ examDetails: {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
-          pgDuration: pgDuration || 0,
-  pgRadiologyTraining: pgFileData,
+  //         pgDuration: pgDuration || 0,
+  // pgRadiologyTraining: pgFileData,
         centers,
       });
 
@@ -310,8 +341,8 @@ examDetails: {
           remarks: remarks || "",
           paymentStatus: "paid",
         },
-  pgDuration: pgDuration || 0,
-  pgRadiologyTraining: pgFileData,
+  // pgDuration: pgDuration || 0,
+  // pgRadiologyTraining: pgFileData,
 
         //add 
         centers,
@@ -535,7 +566,6 @@ examDetails: {
         case "1A":
           user.progression.step1 = user.progression.step1 || {};
           user.progression.step1.papers = user.progression.step1.papers || {};
-
 
           // 🧩 Re-fillup logic for Paper 1 if failed
           if (user.progression.step1.papers.paper1?.status === "failed") {

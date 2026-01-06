@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-
 const ExamRegistrationSchema = new mongoose.Schema(
   {
     applicationNumber: {
@@ -12,9 +11,7 @@ const ExamRegistrationSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-   
       examId: { type: mongoose.Schema.Types.ObjectId, ref: "Exam" },
-
     examDetails: {
     _id: String,
     subject: String,
@@ -30,7 +27,6 @@ const ExamRegistrationSchema = new mongoose.Schema(
     status: String,
     requiredLevel: String,
     eligibilityCriteria: String,
-
     // ✅ Nested Objects
     centers: { type: Object },
     details: { type: Object },
@@ -62,25 +58,24 @@ const ExamRegistrationSchema = new mongoose.Schema(
       // exchangeRate: { type: Number, default: 1 },     
       remarks: { type: String, default: "" },
     },
-
-    result: {
-      marksObtained: { type: Number, default: null, min: 0 },
-      percentage: { type: Number, default: null, min: 0, max: 100 },
-      grade: { type: String, default: null },
-      resultStatus: {
-        type: String,
-        enum: ["pending", "pass", "failed", "absent"],
-        default: "pending",
-      },
-      examAttemptedDate: { type: Date, default: null },
-      resultPublishedDate: { type: Date, default: null },
-      resultPublishedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "AdminUser",
-        default: null,
-      },
-      remarks: { type: String, default: "" },
-    },
+    // result: {
+    //   marksObtained: { type: Number, default: null, min: 0 },
+    //   percentage: { type: Number, default: null, min: 0, max: 100 },
+    //   grade: { type: String, default: null },
+    //   resultStatus: {
+    //     type: String,
+    //     enum: ["pending", "pass", "failed", "absent"],
+    //     default: "pending",
+    //   },
+    //   examAttemptedDate: { type: Date, default: null },
+    //   resultPublishedDate: { type: Date, default: null },
+    //   resultPublishedBy: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "AdminUser",
+    //     default: null,
+    //   },
+    //   remarks: { type: String, default: "" },
+    // },
     //
     centers: {
       center1: { type: String },
@@ -92,47 +87,32 @@ const ExamRegistrationSchema = new mongoose.Schema(
       center7: { type: String },
       center8: { type: String },
       center9: { type: String },
-      center10: { type: String },
-      center11: { type: String },
     },
     //add attemp
     attemptNumber: {
   type: Number,
   default: 1,
 },
-
 // Add new file 
 pgRadiologyTraining: {
   fileUrl: { type: String, default: "" },
   fileName: { type: String, default: "" },
   uploadedAt: { type: Date, default: null }
 },
-
 pgDuration: {
   type: Number, // duration in months or years
   required: false,
   min: 0
 },
-
-//
 allowed: { type: Boolean, default: false } // admin sets this to true when exam is allowed
-
   },
-  
-
-  //add center 
-
   { timestamps: true } // automatically adds createdAt and updatedAt
 );
-
 // Optional: Ensure unique application per user per exam
 ExamRegistrationSchema.index({ userId: 1, examId: 1,"examDetails.paper": 1 }, { unique: true });
-
-
 
 const ExamRegistration = mongoose.model(
   "ExamRegistration",
   ExamRegistrationSchema
 );
-
 export default ExamRegistration;

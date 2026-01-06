@@ -1,5 +1,5 @@
 import express from "express";
-import { createExam, getAllExams, getExamByCode,deleteExam,updateExam ,getExamDashboardStats,getExamRegistrationCount,allowExam} from "../controllers/examController.js";
+import { createExam, getAllExams, getExamByCode,deleteExam,updateExam ,getExamDashboardStats,getExamRegistrationCount,allowExam,getExamsByCombinedId} from "../controllers/examController.js";
 
 const router = express.Router();
 
@@ -8,12 +8,13 @@ router.get("/exams", getAllExams);
 router.get("/desktop", getExamDashboardStats);
 router.get("/exams/:examCode", getExamByCode);
 router.get("/count", getExamRegistrationCount);
+router.get("/combined/:combinedExamId", getExamsByCombinedId);
+//
 
 // router.delete("/exams/:examCode",deleteExam);
 router.delete("/exams/:id", deleteExam);
 
 router.put("/exams/:id",updateExam);
-
 
 router.patch("/:examId/allow", allowExam);
 export default router;
