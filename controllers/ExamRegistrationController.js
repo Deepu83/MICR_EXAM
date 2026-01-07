@@ -114,9 +114,12 @@ let pgFileData = {
 };
 
 if (req.file) {
+  const isImage = req.file.mimetype.startsWith("image/");
+  const isPdf = req.file.mimetype === "application/pdf";
+
   const result = await cloudinary.uploader.upload(req.file.path, {
     folder: "pg_radiology",
-    resource_type: "raw",
+    resource_type: isImage ? "image" : "raw"
   });
 
   pgFileData = {
