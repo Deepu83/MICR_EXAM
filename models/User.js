@@ -166,17 +166,75 @@ const Step3Schema = new mongoose.Schema({
 
 
 // ✅ Main Progression Schema (Fixed)
-const ProgressionSchema = new mongoose.Schema({
-  currentLevel: {
-    type: mongoose.Schema.Types.Mixed, // allows both numbers and strings
-    enum: [0, 1, 2, 3, 4, "1A", "1B","3A","3B"], // 1A and 1B for partial Step 1 completion
-    default: 0,
+// const ProgressionSchema = new mongoose.Schema({
+//   currentLevel: {
+//     type: mongoose.Schema.Types.Mixed, // allows both numbers and strings
+//     enum: [0, 1, 2, 3, 4, "1A", "1B","3A","3B"], // 1A and 1B for partial Step 1 completion
+//     default: 0,
+//   },
+  
+//   step1: { type: Step1Schema, default: () => ({}) },
+//   step2: { type: Step2Schema, default: () => ({}) },
+//   step3: { type: Step3Schema, default: () => ({}) },
+//   allStepsCompleted: { type: Boolean, default: false },
+//   completionDate: { type: Date, default: null },
+  
+  
+// });
+const ProgressionSchema = new mongoose.Schema(
+  {
+    currentLevel: {
+      type: mongoose.Schema.Types.Mixed,
+      enum: [0, 1, 2, 3, 4, "1A", "1B", "3A", "3B"],
+      default: 0,
+    },
+
+    step1: { type: Step1Schema, default: () => ({}) },
+    step2: { type: Step2Schema, default: () => ({}) },
+    step3: { type: Step3Schema, default: () => ({}) },
+
+    allStepsCompleted: { type: Boolean, default: false },
+    completionDate: { type: Date, default: null },
   },
-  step1: { type: Step1Schema, default: () => ({}) },
-  step2: { type: Step2Schema, default: () => ({}) },
-  step3: { type: Step3Schema, default: () => ({}) },
-  allStepsCompleted: { type: Boolean, default: false },
-  completionDate: { type: Date, default: null },
+  {
+    toJSON: { virtuals: true },   // ✅ REQUIRED
+    toObject: { virtuals: true }, // ✅ REQUIRED
+  }
+);
+ProgressionSchema.virtual("currentStatus").get(function () {
+  // 1️⃣ Fully completed
+  if (this.allStepsCompleted === true) {
+    return "completed";
+  }
+
+  const level = this.currentLevel;
+
+  // 2️⃣ Step-1
+  if (level === 1 || level === "1A" || level === "1B") {
+    if (this.step1?.overallStatus === "passed") {
+      return "passed";
+    }
+    return "open";
+  }
+
+  // 3️⃣ Step-2
+  if (level === 2) {
+    if (this.step2?.status === "passed") {
+      return "passed";
+    }
+    return "open";
+  }
+
+  // 4️⃣ Step-3
+  if (level === 3 || level === "3A" || level === "3B") {
+    if (this.step3?.overallStatus === "passed") {
+      return "passed";
+    }
+    return "open";
+  }
+
+  // 5️⃣ Default
+  return "closed";
 });
 
 // ✅ User Schema

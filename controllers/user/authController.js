@@ -422,22 +422,55 @@ export const getAllUsers = async (req, res) => {
 };
 
 // GET user by ID Admin pannel Api 
+// export const getUserById = async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+//     const user = await User.findById(userId).select("-password");
+//     if (!user) return res.status(404).json({ msg: "User not found" });
+
+//     res.status(200).json({
+//       msg: "User fetched successfully",
+//       user,
+//       centers: user.profile?.application?.centers || {}
+//     });
+//   } catch (err) {
+//     console.error("Error fetching user:", err);
+//     res.status(500).json({ msg: "Server error", error: err.message });
+//   }
+// };
 export const getUserById = async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).select("-password");
-    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    console.log("🔍 Fetching user with ID:", userId);
+
+    const user = await User.findById(userId).select(
+      "-passwordHash -otp -otpExpires -__v"
+    );
+
+    if (!user) {
+      console.log("❌ User not found");
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    console.log("✅ User fetched successfully");
+    console.log("📌 Centers:", user.profile?.application?.centers);
 
     res.status(200).json({
       msg: "User fetched successfully",
       user,
-      centers: user.profile?.application?.centers || {}
+      centers: user.profile?.application?.centers || {},
     });
+
   } catch (err) {
-    console.error("Error fetching user:", err);
-    res.status(500).json({ msg: "Server error", error: err.message });
+    console.error("🔥 Error fetching user:", err.message);
+    res.status(500).json({
+      msg: "Server error",
+      error: err.message,
+    });
   }
 };
+
 //logic of passed 
 export const adminMarkStepPassed = async (req, res) => {
   try {
