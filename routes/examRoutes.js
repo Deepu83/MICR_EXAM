@@ -1,5 +1,5 @@
 import express from "express";
-import { createExam, getAllExams, getExamByCode,deleteExam,updateExam ,getExamDashboardStats,getExamRegistrationCount,allowExam,getExamsByCombinedId} from "../controllers/examController.js";
+import { createExam, getAllExams, getExamByCode,deleteExam,updateExam ,getExamDashboardStats,getExamRegistrationCount,allowExam,getExamsByCombinedId,getExamById} from "../controllers/examController.js";
 
 const router = express.Router();
 
@@ -10,6 +10,9 @@ router.get("/exams/:examCode", getExamByCode);
 router.get("/count", getExamRegistrationCount);
 router.get("/combined/:combinedExamId", getExamsByCombinedId);
 //
+// routes/examRoutes.js
+router.get("/exam/:examId", getExamById);
+
 
 // router.delete("/exams/:examCode",deleteExam);
 router.delete("/exams/:id", deleteExam);

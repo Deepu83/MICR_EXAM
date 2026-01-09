@@ -9,7 +9,7 @@ const examSchema = new mongoose.Schema({
   // examCode: String,
    examCode: {
       type: String,
-      enum: ["1", "1A", "1B", "2","3", "3A", "3B"], // ✅ Only allow these codes
+      enum: ["1", "1A", "1B", "2","3", "3A", "3B"], //sk2009025@gmail.comv ✅ Only allow these codes
       required: true,
     },
   backendCode: String,
@@ -24,14 +24,17 @@ parentId: {
     index: true,
   },
 
-  
 
     // 🔥 NEW (VERY IMPORTANT)
     year: {
       type: Number,
       required: true,
     },
-
+  // ✅ VENUE (GLOBAL / OPTIONAL)
+  venue: {
+    type: String,
+    required: false,
+  },
 
   requiredLevel: String,
   paperMedium: { type: String }, 

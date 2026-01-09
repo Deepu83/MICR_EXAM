@@ -414,3 +414,29 @@ export const allowExam = async (req, res) => {
 
 // ✅ Get all exams (simple and clean)
 
+// ✅ Get exam details by examId
+export const getExamById = async (req, res) => {
+  try {
+    const { examId } = req.params;
+
+    // 🔴 Validate MongoDB ObjectId
+    if (!examId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: "Invalid exam ID" });
+    }
+
+    const exam = await Exam.findById(examId);
+
+    if (!exam) {
+      return res.status(404).json({ message: "Exam not found" });
+    }
+
+    res.status(200).json({
+      message: "Exam fetched successfully",
+      exam,
+    });
+
+  } catch (error) {
+    console.error("❌ getExamById error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -237,272 +237,157 @@ if (!exam) {
     };
 
     // ✅ Handle different exam codes
-    let registrations = [];
+    // ✅ Handle different exam codes
+    // ✅ Handle different exam codes
+let registrations = [];
+let overallApplicationId = null; // ⭐ NEW
 
-    if (examCode === "1") {
-      // Generate three unique application numbers
-      const appNum1 = await generateUniqueAppNumber(); // Paper 1
-      const appNum2 = await generateUniqueAppNumber(); // Paper 2
-      const appNumOverall = await generateUniqueAppNumber(); // Step 1 overall
+if (examCode === "1") {
+  // Generate unique application numbers
+  const appNum1 = await generateUniqueAppNumber(); // Paper 1
+  const appNum2 = await generateUniqueAppNumber(); // Paper 2
+  const appNumOverall = await generateUniqueAppNumber(); // ⭐ Overall Step 1
 
-      // Save registration for Paper 1
-      const registration1 = new ExamRegistration({
-        applicationNumber: appNum1,
-        userId: new mongoose.Types.ObjectId(userId),
-        examId,
-examDetails: {
-  _id: exam._id,
-  subject: exam.subject,
-  internationalAmount: exam.internationalAmount,
-  nationalAmount: exam.nationalAmount,
-  currency: exam.currency,
-  examCode: exam.examCode,
-  backendCode: exam.backendCode,
-  paperMedium: exam.paperMedium,
-  dateOfExam: exam.dateOfExam,
-  breakTime: exam.breakTime,
-  gateClosingTime: exam.gateClosingTime,
-  centers: exam.centers,
-  details: exam.details,
-  stats: exam.stats,
-  instructions: exam.instructions,
-  requiredLevel: exam.requiredLevel,
-  eligibilityCriteria: exam.eligibilityCriteria,
-  status: exam.status,
-     centers: exam.centers || {},
-  details: exam.details || {},
-  instructions: exam.instructions || [],
-  stats: exam.stats || {},
+  overallApplicationId = appNumOverall; // ⭐ STORE FOR RESPONSE
 
-  // new field 
+  // Paper 1 registration
+  const registration1 = new ExamRegistration({
+    applicationNumber: appNum1,
+    userId: new mongoose.Types.ObjectId(userId),
+    examId,
+    examDetails: exam,
+    applicationInfo: {
+      examDate,
+      paymentAmount,
+      currency: currency || "INR",
+      paymentMode: "Razorpay",
+      transactionId: payment_id,
+      country: country || "India",
+      remarks: remarks || "",
+      paymentStatus: "paid",
+    },
+    pgDuration: pgDuration || 0,
+    pgRadiologyTraining: pgFileData,
+    centers,
+  });
 
-},
+  // Paper 2 registration
+  const registration2 = new ExamRegistration({
+    applicationNumber: appNum2,
+    userId: new mongoose.Types.ObjectId(userId),
+    examId,
+    examDetails: exam,
+    applicationInfo: {
+      examDate,
+      paymentAmount,
+      currency: currency || "INR",
+      paymentMode: "Razorpay",
+      transactionId: payment_id,
+      country: country || "India",
+      remarks: remarks || "",
+      paymentStatus: "paid",
+    },
+    pgDuration: pgDuration || 0,
+    pgRadiologyTraining: pgFileData,
+    centers,
+  });
 
-        
-        applicationInfo: {
-          examDate,
-          paymentAmount,
-          currency: currency || "INR",
-          paymentMode: "Razorpay",
-          transactionId: payment_id,
-          country: country || "India",
-          remarks: remarks || "",
-          paymentStatus: "paid",
-        },
-          pgDuration: pgDuration || 0,
-  pgRadiologyTraining: pgFileData,
-        centers,
-      });
+  await registration1.save();
+  await registration2.save();
 
-      // Save registration for Paper 2
-      const registration2 = new ExamRegistration({
-        applicationNumber: appNum2,
-        userId: new mongoose.Types.ObjectId(userId),
-        examId,
-
-       
-        examDetails: {
-  _id: exam._id,
-  subject: exam.subject,
-  internationalAmount: exam.internationalAmount,
-  nationalAmount: exam.nationalAmount,
-  currency: exam.currency,
-  examCode: exam.examCode,
-  backendCode: exam.backendCode,
-  paperMedium: exam.paperMedium,
-  dateOfExam: exam.dateOfExam,
-  breakTime: exam.breakTime,
-  gateClosingTime: exam.gateClosingTime,
-  centers: exam.centers,
-  details: exam.details,
-  stats: exam.stats,
-  instructions: exam.instructions,
-  requiredLevel: exam.requiredLevel,
-  eligibilityCriteria: exam.eligibilityCriteria,
-  status: exam.status,
-     centers: exam.centers || {},
-  details: exam.details || {},
-  instructions: exam.instructions || [],
-  stats: exam.stats || {},
-
-  //new 
-  
-},
-
-        applicationInfo: {
-          examDate,
-          paymentAmount,
-          currency: currency || "INR",
-          paymentMode: "Razorpay",
-          transactionId: payment_id,
-          country: country || "India",
-          remarks: remarks || "",
-          paymentStatus: "paid",
-        },
-  pgDuration: pgDuration || 0,
-  pgRadiologyTraining: pgFileData,
-
-        //add 
-        centers,
-      });
-
-      // Save both registrations
-      await registration1.save();
-      await registration2.save();
-
-      // ✅ Update progression
-      user.progression = user.progression || {};
-      user.progression.step1 = user.progression.step1 || {};
-      user.progression.step1.papers = user.progression.step1.papers || {};
-
-      // Paper 1 and 2 data
-      user.progression.step1.papers.paper1 = {
+  // ✅ Update user progression
+  user.progression = user.progression || {};
+  user.progression.step1 = {
+    applicationId: appNumOverall, // ⭐ OVERALL ID
+    overallStatus: "filled",
+    papers: {
+      paper1: {
         applicationId: appNum1,
         status: "submitted",
-      };
-      user.progression.step1.papers.paper2 = {
+      },
+      paper2: {
         applicationId: appNum2,
         status: "submitted",
-      };
+      },
+    },
+  };
 
-      // ✅ Add overall Step 1 applicationId
-      user.progression.step1.applicationId = appNumOverall;
-      user.progression.step1.overallStatus = "filled";
+  registrations.push(registration1, registration2);
+}
 
-      registrations.push(registration1, registration2);
-    }
-    //for 3
+
     // ✅ For combined Step 3 (3A + 3B)
-    else if (examCode === "3") {
-      // Generate three unique application numbers
-      const appNum3A = await generateUniqueAppNumber(); // Step 3A
-      const appNum3B = await generateUniqueAppNumber(); // Step 3B
-      const appNumOverall3 = await generateUniqueAppNumber(); // Step 3 overall
+else if (examCode === "3") {
+  // Generate unique application numbers
+  const appNum3A = await generateUniqueAppNumber(); // Step 3A
+  const appNum3B = await generateUniqueAppNumber(); // Step 3B
+  const appNumOverall3 = await generateUniqueAppNumber(); // ⭐ Overall Step 3
 
-      // Save registration for Part A
-      const registration3A = new ExamRegistration({
-        applicationNumber: appNum3A,
-        userId: new mongoose.Types.ObjectId(userId),
-        examId,
+  overallApplicationId = appNumOverall3; // ⭐ SEND TO FRONTEND
 
-      
-        examDetails: {
-  _id: exam._id,
-  subject: exam.subject,
-  internationalAmount: exam.internationalAmount,
-  nationalAmount: exam.nationalAmount,
-  currency: exam.currency,
-  examCode: exam.examCode,
-  backendCode: exam.backendCode,
-  paperMedium: exam.paperMedium,
-  dateOfExam: exam.dateOfExam,
-  breakTime: exam.breakTime,
-  gateClosingTime: exam.gateClosingTime,
-  centers: exam.centers,
-  details: exam.details,
-  stats: exam.stats,
-  instructions: exam.instructions,
-  requiredLevel: exam.requiredLevel,
-  eligibilityCriteria: exam.eligibilityCriteria,
-  status: exam.status,
-     centers: exam.centers || {},
-  details: exam.details || {},
-  instructions: exam.instructions || [],
-  stats: exam.stats || {},
+  // Part A registration
+  const registration3A = new ExamRegistration({
+    applicationNumber: appNum3A,
+    userId: new mongoose.Types.ObjectId(userId),
+    examId,
+    examDetails: exam,
+    applicationInfo: {
+      examDate,
+      paymentAmount,
+      currency: currency || "INR",
+      paymentMode: "Razorpay",
+      transactionId: payment_id,
+      country: country || "India",
+      remarks: remarks || "",
+      paymentStatus: "paid",
+    },
+    pgDuration: pgDuration || 0,
+    pgRadiologyTraining: pgFileData,
+    centers,
+  });
 
-  //
+  // Part B registration
+  const registration3B = new ExamRegistration({
+    applicationNumber: appNum3B,
+    userId: new mongoose.Types.ObjectId(userId),
+    examId,
+    examDetails: exam,
+    applicationInfo: {
+      examDate,
+      paymentAmount,
+      currency: currency || "INR",
+      paymentMode: "Razorpay",
+      transactionId: payment_id,
+      country: country || "India",
+      remarks: remarks || "",
+      paymentStatus: "paid",
+    },
+    pgDuration: pgDuration || 0,
+    pgRadiologyTraining: pgFileData,
+    centers,
+  });
 
-},
+  await registration3A.save();
+  await registration3B.save();
 
-        applicationInfo: {
-          examDate,
-          paymentAmount,
-          currency: currency || "INR",
-          paymentMode: "Razorpay",
-          transactionId: payment_id,
-          country: country || "India",
-          remarks: remarks || "",
-          paymentStatus: "paid",
-        },
-  
-        centers,
-         pgDuration: pgDuration || 0,
-  pgRadiologyTraining: pgFileData,
+  // ✅ Update progression for Step 3
+  user.progression = user.progression || {};
+  user.progression.step3 = {
+    applicationId: appNumOverall3, // ⭐ OVERALL ID
+    overallStatus: "filled",
+    partA: {
+      applicationId: appNum3A,
+      status: "submitted",
+    },
+    partB: {
+      applicationId: appNum3B,
+      status: "submitted",
+    },
+  };
 
-      });
+  registrations.push(registration3A, registration3B);
+}
 
-      // Save registration for Part B
-      const registration3B = new ExamRegistration({
-        applicationNumber: appNum3B,
-        userId: new mongoose.Types.ObjectId(userId),
-        examId,
-           examDetails: {
-  _id: exam._id,
-  subject: exam.subject,
-  internationalAmount: exam.internationalAmount,
-  nationalAmount: exam.nationalAmount,
-  currency: exam.currency,
-  examCode: exam.examCode,
-  backendCode: exam.backendCode,
-  paperMedium: exam.paperMedium,
-  dateOfExam: exam.dateOfExam,
-  breakTime: exam.breakTime,
-  gateClosingTime: exam.gateClosingTime,
-  centers: exam.centers,
-  details: exam.details,
-  stats: exam.stats,
-  instructions: exam.instructions,
-  requiredLevel: exam.requiredLevel,
-  eligibilityCriteria: exam.eligibilityCriteria,
-  status: exam.status,
-   centers: exam.centers || {},
-  details: exam.details || {},
-  instructions: exam.instructions || [],
-  stats: exam.stats || {},
-
-
-
-},
-
-        applicationInfo: {
-          examDate,
-          paymentAmount,
-          currency: currency || "INR",
-          paymentMode: "Razorpay",
-          transactionId: payment_id,
-          country: country || "India",
-          remarks: remarks || "",
-          paymentStatus: "paid",
-        },
- pgDuration: pgDuration || 0,
-  pgRadiologyTraining: pgFileData,
-
-        centers,
-      });
-
-      // Save both registrations
-      await registration3A.save();
-      await registration3B.save();
-
-      // ✅ Update progression for Step 3
-      user.progression = user.progression || {};
-      user.progression.step3 = user.progression.step3 || {};
-
-      user.progression.step3.partA = {
-        applicationId: appNum3A,
-        status: "submitted",
-      };
-
-      user.progression.step3.partB = {
-        applicationId: appNum3B,
-        status: "submitted",
-      };
-
-      user.progression.step3.applicationId = appNumOverall3;
-      user.progression.step3.overallStatus = "filled";
-
-      registrations.push(registration3A, registration3B);
-    }
     ///
 
     // ✅ For single-paper exam codes
@@ -686,7 +571,9 @@ if (examId) {
 
     res.status(200).json({
       msg: "Payment verified and registration completed successfully",
+
       registrations,
+        overallApplicationId,
     });
 
   } catch (err) {
@@ -1020,8 +907,6 @@ export const getStepDetailsByApplicationId = async (req, res) => {
 
 
 
-//add exam
-// import Exam from "../models/Exam.js"
 
 
 export const getAdmitCard = async (req, res) => {
@@ -1035,57 +920,69 @@ export const getAdmitCard = async (req, res) => {
 
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(applicationId);
 
+    let registration = null;
+    let user = null;
 
-// 🔹 Step 1: Try to find registration by applicationNumber
-let registration = await ExamRegistration.findOne({
-  applicationNumber: applicationId,
-})
-  .populate("examId", "examName examCode allowed") // make sure to include 'allowed'
-  .lean();
+    // 🔹 STEP 1: Try paper-level registration first
+    registration = await ExamRegistration.findOne({
+      applicationNumber: applicationId,
+    })
+      // .populate("examId", "examName examCode allowed")
+      .populate("examId", "examName examCode allowed venue")
 
-// 🔹 Step 2: Try by ObjectId if not found
-if (!registration && isObjectId) {
-  registration = await ExamRegistration.findById(applicationId)
-    .populate("examId", "examName examCode allowed") // include 'allowed'
-    .lean();
-}
+      .lean();
 
-// 🔹 Check if registration exists
-if (!registration) {
-  return res.status(404).json({
-    msg: "❌ Registration not found for this application ID",
-  });
-}
+    // 🔹 STEP 2: Try by ObjectId
+    if (!registration && isObjectId) {
+      registration = await ExamRegistration.findById(applicationId)
+        // .populate("examId", "examName examCode allowed")
+        .populate("examId", "examName examCode allowed venue")
 
-// 🔹 Check if exam is allowed
-if (!registration.examId?.allowed) {
-  return res.status(403).json({
-    msg: "❌ Admit card generation not allowed for this exam yet. Please contact admin.",
-  });
-}
-
-
-    // 🔹 Step 3: Try to locate user directly from progression if registration not found
-    let user;
-    if (registration?.userId) {
-      user = await User.findById(registration.userId)
-        .select(
-          "name gender email mobileNumber aadhaarNumber registerNo profile progression profileCompleted"
-        )
         .lean();
-    } else {
-      console.log("⚠️ Registration not linked to user, finding by progression...");
+    }
+
+    // 🔹 STEP 3: Handle OVERALL applicationId (Step-1 / Step-3)
+    if (!registration) {
       user = await User.findOne({
         $or: [
           { "progression.step1.applicationId": applicationId },
-          { "progression.step1.papers.paper1.applicationId": applicationId },
-          { "progression.step1.papers.paper2.applicationId": applicationId },
-          { "progression.step2.applicationId": applicationId },
           { "progression.step3.applicationId": applicationId },
-          { "progression.step3.partA.applicationId": applicationId },
-          { "progression.step3.partB.applicationId": applicationId },
         ],
+      }).lean();
+
+      if (!user) {
+        return res.status(404).json({
+          msg: "❌ Registration not found for this application ID",
+        });
+      }
+
+      // 🔹 Fetch one paper registration for admit card (Paper-1 / Part-A)
+      registration = await ExamRegistration.findOne({
+        userId: user._id,
       })
+        .sort({ createdAt: 1 })
+        // .populate("examId", "examName examCode allowed")
+        .populate("examId", "examName examCode allowed venue")
+
+        .lean();
+    }
+
+    if (!registration) {
+      return res.status(404).json({
+        msg: "❌ Registration not found for this application ID",
+      });
+    }
+
+    // 🔹 STEP 4: Check exam allowed
+    if (!registration.examId?.allowed) {
+      return res.status(403).json({
+        msg: "❌ Admit card generation not allowed yet. Please contact admin.",
+      });
+    }
+
+    // 🔹 STEP 5: Fetch user if not already fetched
+    if (!user) {
+      user = await User.findById(registration.userId)
         .select(
           "name gender email mobileNumber aadhaarNumber registerNo profile progression profileCompleted"
         )
@@ -1096,19 +993,13 @@ if (!registration.examId?.allowed) {
       return res.status(404).json({ msg: "No user found for this application ID" });
     }
 
-    console.log("✅ User found:", user.name);
-
-    // ✅ Normalize progression object
-    const progression = user.progression?.toObject
-      ? user.progression.toObject()
-      : user.progression || {};
-
+    // 🔹 Normalize progression
+    const progression = user.progression || {};
     let foundInStep = false;
 
-    // ✅ Match applicationId inside step1/step3 or nested papers/parts
     const filteredProgression = Object.entries(progression).reduce(
       (acc, [key, value]) => {
-        if (typeof value === "object" && value !== null) {
+        if (value && typeof value === "object") {
           const matches =
             value.applicationId === applicationId ||
             value.papers?.paper1?.applicationId === applicationId ||
@@ -1119,7 +1010,6 @@ if (!registration.examId?.allowed) {
           if (matches) {
             acc[key] = value;
             foundInStep = true;
-            console.log(`✅ Found match in progression → ${key}`);
           }
         }
         return acc;
@@ -1127,11 +1017,7 @@ if (!registration.examId?.allowed) {
       {}
     );
 
-    if (!foundInStep) {
-      console.log("⚠️ No matching progression found for applicationId");
-    }
-
-    // ✅ Clean user profile safely
+    // 🔹 Profile cleanup
     const appProfile = user.profile?.application || {};
     const cleanedProfile = {
       fullName: appProfile.fullName || user.name || "",
@@ -1147,64 +1033,33 @@ if (!registration.examId?.allowed) {
       altNumber: appProfile.altNumber || "",
     };
 
-    // ✅ Extract exam details safely
-    const appInfo = registration?.applicationInfo || {};
-    // const centers = registration?.centers || appInfo?.centers || {};
-const centers = registration?.centers ?? {};
-
-// Convert to array of center names, ignoring undefined/null
-const centerNames = Object.keys(centers)
-  .filter(key => key.startsWith("center") && centers[key])
-  .map(key => centers[key]);
-
-console.log("Centers object:", centers);
-console.log("Center names array:", centerNames);
-
-console.log("Centers:", centers);
-
-
-    const examName =
-      registration?.examId?.examName || appInfo?.examName || "N/A";
-    const examCode =
-      registration?.examId?.examCode || appInfo?.examCode || "N/A";
-    //
-    const examDetails = registration?.examDetails || {};
-
-// Extract gateClosingTime and breakTime from examDetails
-const gateClosingTime = examDetails?.gateClosingTime || appInfo?.gateClosingTime || null;
-const breakTime = examDetails?.breakTime || appInfo?.breakTime || null;
-const subjectName = examDetails?.subject || "N/A";  // ✅ use examDetails.subject
+    // 🔹 Exam + center info
+    const appInfo = registration.applicationInfo || {};
+    const centers = registration.centers || {};
+    const examDetails = registration.examDetails || {};
 
     const DEFAULT_IMAGE =
       "https://res.cloudinary.com/dkocmwzhh/image/upload/v1762407097/0_kromzz.jpg";
 
-    // ✅ Build admit card response
+    // 🔹 FINAL ADMIT CARD RESPONSE
     const admitCard = {
-      applicationNumber: registration?.applicationNumber || applicationId,
-      examName,
-      examCode,
-      examDate: appInfo?.examDate || null,
-      reportingTime: appInfo?.reportingTime || "08:30 AM",
-      gateClosingTime,
-      breakTime,
-      subjectName,
-      examTimings: appInfo?.timing || null,
-      centerName: [
-        centers.center1,
-        centers.center2,
-        centers.center3,
-        centers.center4,
-        centers.center5,
-        centers.center6,
-        centers.center7,
-        centers.center8,
-        centers.center9,
-      ].filter(Boolean),
-      venue: centers.venue || centers.address || null,
-      testCenterNumber: centers.testCenterNumber || null,
-      remarks: appInfo?.remarks || null,
+      applicationNumber: applicationId, // ⭐ ALWAYS SHOW REQUESTED ID
+      examName: registration.examId?.examName || "N/A",
+      examCode: registration.examId?.examCode || "N/A",
+      subjectName: examDetails.subject || "N/A",
+      examDate: appInfo.examDate || null,
+      reportingTime: appInfo.reportingTime || "08:30 AM",
+      gateClosingTime: examDetails.gateClosingTime || null,
+      breakTime: examDetails.breakTime || null,
+      examTimings: appInfo.timing || null,
 
-      // ✅ User details
+      centerName: Object.values(centers).filter(Boolean),
+      // venue: ve || centers.address || null,
+       venue: registration.examId?.venue || null,
+      testCenterNumber: centers.testCenterNumber || null,
+      remarks: appInfo.remarks || null,
+
+      // User
       userId: user._id,
       name: user.name,
       mobileNumber: user.mobileNumber,
@@ -1213,7 +1068,7 @@ const subjectName = examDetails?.subject || "N/A";  // ✅ use examDetails.subje
       profileCompleted: user.profileCompleted,
       progression: filteredProgression,
 
-      // ✅ Photo
+      // Photos
       photo:
         user.profile?.documents?.photo?.url ||
         appProfile.documents?.photo?.url ||
@@ -1221,9 +1076,8 @@ const subjectName = examDetails?.subject || "N/A";  // ✅ use examDetails.subje
         null,
       signature: user.profile?.documents?.signature?.url || null,
       defaultImage: DEFAULT_IMAGE,
-      // ✅ Cleaned Profile
-      profile: cleanedProfile,
 
+      profile: cleanedProfile,
     };
 
     return res.status(200).json({
