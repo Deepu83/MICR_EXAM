@@ -292,10 +292,14 @@ export const updateProfile = async (req, res) => {
         pgCertificate: "users/pg",
       };
 
-      for (const key in req.files) {
-        if (req.files[key].length > 0) {
-          const file = req.files[key][0];
-          const filePath = path.resolve(file.path);
+      // for (const key in req.files) {
+      //   if (req.files[key].length > 0) {
+      //     const file = req.files[key][0];
+      //     const filePath = path.resolve(file.path);
+if (req.files && req.files.length > 0) {
+  for (const file of req.files) {
+    const key = file.fieldname;
+    const filePath = path.resolve(file.path);
 
           const upload = await cloudinary.uploader.upload(filePath, {
             folder: folderMap[key] || "users",
@@ -322,7 +326,26 @@ export const updateProfile = async (req, res) => {
           } else if (key === "registrationCertificate") {
             user.profile.application.registrationCertificate = fileData;
             user.markModified("profile.application.registrationCertificate");
-          } else {
+           
+            
+          }
+          // ss
+       else if (key.startsWith("otherCertificate_")) {
+      const index = Number(key.split("_")[1]);
+
+      if (!user.profile.education.others) {
+        user.profile.education.others = [];
+      }
+
+      if (!user.profile.education.others[index]) {
+        user.profile.education.others[index] = {};
+      }
+
+      user.profile.education.others[index].certificate = fileData;
+
+      console.log("✅ Saved other certificate at index:", index);
+    
+}  else {
             uploadedDocuments[key] = fileData;
           }
 
@@ -330,6 +353,7 @@ export const updateProfile = async (req, res) => {
         }
       }
     }
+
 
 
 
@@ -358,12 +382,15 @@ user.profile.education = {
       education.pg?.certificate ||
       null,
   },
-  others:
-    education.others ||
-    user.profile.education.others ||
-    [],
-};
-
+//   others:
+//     education.others ||
+//     user.profile.education.others ||
+//     [],
+// };
+others: (education.others || []).map((item, index) => ({
+  ...user.profile.education.others?.[index], // keep certificate
+  ...item, // add text fields
+})),};
 user.profile.documents = uploadedDocuments;
 user.profile.profileCompletedAt = new Date();
 user.profileCompleted = true;

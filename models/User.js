@@ -165,22 +165,6 @@ const Step3Schema = new mongoose.Schema({
 });
 
 
-// ✅ Main Progression Schema (Fixed)
-// const ProgressionSchema = new mongoose.Schema({
-//   currentLevel: {
-//     type: mongoose.Schema.Types.Mixed, // allows both numbers and strings
-//     enum: [0, 1, 2, 3, 4, "1A", "1B","3A","3B"], // 1A and 1B for partial Step 1 completion
-//     default: 0,
-//   },
-  
-//   step1: { type: Step1Schema, default: () => ({}) },
-//   step2: { type: Step2Schema, default: () => ({}) },
-//   step3: { type: Step3Schema, default: () => ({}) },
-//   allStepsCompleted: { type: Boolean, default: false },
-//   completionDate: { type: Date, default: null },
-  
-  
-// });
 const ProgressionSchema = new mongoose.Schema(
   {
     currentLevel: {

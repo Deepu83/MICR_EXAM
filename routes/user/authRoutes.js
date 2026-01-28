@@ -38,19 +38,31 @@ router.post("/login", login);
 
 // Update profile with files
 router.put(
-  "/update-profile/:userId",protect,
-  upload.fields([
-    { name: "photo", maxCount: 1 },
-    { name: "signature", maxCount: 1 },
-    { name: "id_proof", maxCount: 1 },
-    { name: "education", maxCount: 1 },
-    { name: "address", maxCount: 1 },
-    { name: "registrationCertificate", maxCount: 1 }, // NEW
-    { name: "mbbsCertificate", maxCount: 1 }, // NEW
-    { name: "pgCertificate", maxCount: 1 }, // NEW
-  ]),
+  "/update-profile/:userId",
+  protect,
+  upload.any(),   // <-- THIS
   updateProfile
 );
+
+// router.put(
+//   "/update-profile/:userId",protect,
+//   upload.fields([
+//     { name: "photo", maxCount: 1 },
+//     { name: "signature", maxCount: 1 },
+//     { name: "id_proof", maxCount: 1 },
+//     { name: "education", maxCount: 1 },
+//     { name: "address", maxCount: 1 },
+//     { name: "registrationCertificate", maxCount: 1 }, // NEW
+//     { name: "mbbsCertificate", maxCount: 1 }, // NEW
+//     { name: "pgCertificate", maxCount: 1 }, // NEW
+
+//       { name: "otherCertificate_0", maxCount: 1 },
+//     { name: "otherCertificate_1", maxCount: 1 },
+//     { name: "otherCertificate_2", maxCount: 1 },
+//     { name: "otherCertificate_3", maxCount: 1 },
+//   ]),
+//   updateProfile
+// );
 
 //
 // 🟡 NEW: Request to edit profile (with file uploads, pending admin approval)

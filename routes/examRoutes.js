@@ -10,7 +10,7 @@ router.get("/exams/:examCode", getExamByCode);
 router.get("/count", getExamRegistrationCount);
 router.get("/combined/:combinedExamId", getExamsByCombinedId);
 //
-// routes/examRoutes.js
+// 
 router.get("/exam/:examId", getExamById);
 
 

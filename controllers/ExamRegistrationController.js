@@ -437,8 +437,8 @@ else if (examCode === "3") {
         },
 
 
- pgDuration: pgDuration || 0,
-  pgRadiologyTraining: pgFileData,
+   pgDuration: pgDuration || 0,
+    pgRadiologyTraining: pgFileData,
 
         //add 
         centers,
